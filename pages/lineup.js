@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styles from '../styles/Lineup.module.scss';
 import Image from 'next/image';
 import HomeLink from '../components/HomeLink';
@@ -8,11 +8,25 @@ export default function Lineup() {
   const [error, setError] = useState(null);
   const [expandedArtist, setExpandedArtist] = useState(null);
 
-  useEffect(() => {
-    fetchArtists();
-  }, []);
+  const fetchArtistDetails = async (artist) => {
+    try {
+      const response = await fetch(`/api/search-artist?artist=${encodeURIComponent(artist)}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log(`Artist not found: ${artist}`);
+          return { name: artist, spotifyUrl: null };
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`Error fetching details for ${artist}:`, error);
+      return { name: artist, spotifyUrl: null };
+    }
+  };
 
-  const fetchArtists = async () => {
+  const fetchArtists = useCallback(async () => {
     try {
       const response = await fetch('/api/get-artists');
       if (!response.ok) {
@@ -37,25 +51,11 @@ export default function Lineup() {
       console.error('Error fetching artists:', error);
       setError(error.message);
     }
-  };
+  }, []);
 
-  const fetchArtistDetails = async (artist) => {
-    try {
-      const response = await fetch(`/api/search-artist?artist=${encodeURIComponent(artist)}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log(`Artist not found: ${artist}`);
-          return { name: artist, spotifyUrl: null };
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error(`Error fetching details for ${artist}:`, error);
-      return { name: artist, spotifyUrl: null };
-    }
-  };
+  useEffect(() => {
+    fetchArtists();
+  }, [fetchArtists]);
 
   const toggleArtistExpansion = (index) => {
     setExpandedArtist(expandedArtist === index ? null : index);

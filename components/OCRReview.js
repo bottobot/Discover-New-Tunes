@@ -49,9 +49,6 @@ const OCRReview = ({ initialData, onConfirm }) => {
       console.warn('Invalid or missing artists data in initialData');
       setError('Invalid or missing artists data');
     }
-
-    // Log the current state after setting it
-    console.log('Current artists state:', artists);
   }, [initialData]);
 
   const handleEventInfoChange = (field, value) => {

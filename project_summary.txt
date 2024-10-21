@@ -1,0 +1,22 @@
+The biggest challenge in implementing this old project in NEXT/JS was really switching from
+Multer to Formidable. Then I had to ensure that I was putting the images in the right place (public etc). However,
+at the end, it was working in development but not in production. 
+
+The reason it was not working in production is because unlike Heroku (which seemed to be doing magic on the back end
+with the file uploads), deployment on Vercel did not support uploades automatically. I tried uploading the file to uploads,
+I tried uploading it to temp. Moving a file from temp to a permanent place is an issue. I even tried rewriting the image
+contents without moving the image itself but it seemed that the file system still treated it as a move operation because we changed the contents of the file in place. I tried saving image as base64 string-no luck. 
+
+The error message suggests that the issue is related to a cross-device link not being permitted. This can happen when you try to rename or move a file across different devices or partitions, such as moving a file from the /tmp directory to a directory in the root partition of your server.
+
+"EXDEV: cross-device link not permitted"
+-> This error occurs when you try to move a file from one device to another using the rename() function. In your code, you are trying to move the uploaded file from a temporary directory (/tmp/) to a permanent directory (public/images/uploads/) on a different device. This causes the error.
+
+The error changed a bit but still got a read only kind of error 
+
+"Error: EROFS: read-only file system, copyfile '/tmp/0b9b402dc6fdfa299c40ef100' -> '/var/task/public/images/uploads/breakout-fest.jpg'","reason":{"errorType":"Error","errorMessage":"EROFS: read-only file system, copyfile '/tmp/0b9b402dc6fdfa299c40ef100' ->
+
+BOTTOM LINE -> I needed to store the image somewhere. I chose AWS S3. It wasn't super intuitive but not too bad overall. 
+I upload the image to AWS bucket, I presign it so that the image is openly accessible for an hour and then lastly I send that file to the uploadImage function to parse it with the OCR API.
+
+CHANGEt

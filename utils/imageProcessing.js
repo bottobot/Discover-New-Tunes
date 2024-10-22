@@ -3,8 +3,9 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 
-const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID;
+const GOOGLE_CSE_ID = '84785e6cfdcca4dab';
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const GOOGLE_VISION_API_KEY = '373e9c877a79ff02aa4f15b22b573cd81458c49d';
 
 // Set up Google Cloud credentials
 const googleCloudKeyPath = path.join(process.cwd(), 'google-cloud-key.json');
@@ -24,14 +25,12 @@ async function processImage(imageBuffer) {
   try {
     log('Starting image processing');
     
-    // Create a client with credentials from environment variables
+    // Create a client with the API key
     const client = new vision.ImageAnnotatorClient({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      },
+      credentials: { client_email: null, private_key: null },
+      apiKey: GOOGLE_VISION_API_KEY,
     });
-    log('Vision client created');
+    log('Vision client created using API key');
     
     const [result] = await client.documentTextDetection(imageBuffer);
     log('Document text detection completed');

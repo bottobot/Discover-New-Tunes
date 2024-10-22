@@ -23,10 +23,14 @@ function log(message) {
 async function processImage(imageBuffer) {
   try {
     log('Starting image processing');
-    log(`Google Cloud key path: ${googleCloudKeyPath}`);
-    log(`Google Cloud key file exists: ${fs.existsSync(googleCloudKeyPath)}`);
     
-    const client = new vision.ImageAnnotatorClient();
+    // Create a client with credentials from environment variables
+    const client = new vision.ImageAnnotatorClient({
+      credentials: {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      },
+    });
     log('Vision client created');
     
     const [result] = await client.documentTextDetection(imageBuffer);

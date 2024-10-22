@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
+import Script from 'next/script';
 import styles from '../styles/Home.module.scss';
 import Header from '../components/Header';
 import MadeBy from '../components/MadeBy';
@@ -39,18 +40,9 @@ export default function Home() {
     const [openCVLoaded, setOpenCVLoaded] = useState(false);
 
     useEffect(() => {
-        const loadOpenCV = async () => {
-            if (typeof window !== 'undefined') {
-                window.Module = {
-                    onRuntimeInitialized: () => {
-                        console.log('OpenCV.js initialized');
-                        setOpenCVLoaded(true);
-                    }
-                };
-                await import('https://docs.opencv.org/4.5.2/opencv.js');
-            }
-        };
-        loadOpenCV();
+        if (typeof window !== 'undefined' && window.cv) {
+            setOpenCVLoaded(true);
+        }
     }, []);
 
     useEffect(() => {
@@ -185,7 +177,6 @@ export default function Home() {
         console.log('OCR Review confirmed with data:', JSON.stringify(confirmedData, null, 2));
         setReviewedData(confirmedData);
         setShowOCRReview(false);
-        // We're not fetching artist links here anymore
     }, []);
 
     const selectLineup = useCallback((event) => {
@@ -224,6 +215,14 @@ export default function Home() {
                 <title>Discover New Tunes</title>
                 <meta name="description" content="Discover new tunes from lineup posters" />
                 <link rel="icon" href="/favicon.ico" />
+                <Script 
+                    src="https://docs.opencv.org/4.5.2/opencv.js" 
+                    strategy="beforeInteractive"
+                    onLoad={() => {
+                        console.log('OpenCV.js loaded');
+                        setOpenCVLoaded(true);
+                    }}
+                />
             </Head>
             <div>
                 <div className={`${styles.locateArtistsContainer} ${styles.resultsBackground} ${(reviewedData || lineup) ? "nonInitial" : ""}`}>

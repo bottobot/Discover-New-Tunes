@@ -10,8 +10,6 @@ import Lineup from '../components/Lineup';
 import OCRReview from '../components/OCRReview';
 import Notification from '../components/Notification';
 
-const Tesseract = dynamic(() => import('tesseract.js'), { ssr: false });
-
 const LoadingAnimationWithTimer = ({ elapsedTime }) => {
   const formatTime = (totalSeconds) => {
     const minutes = Math.floor(totalSeconds / 60);
@@ -89,6 +87,7 @@ export default function Home() {
     }, []);
 
     const processImage = useCallback(async (file) => {
+        const Tesseract = await import('tesseract.js');
         const worker = await Tesseract.createWorker('eng');
         try {
             await worker.loadLanguage('eng');

@@ -7,9 +7,9 @@ const GOOGLE_CSE_ID = '84785e6cfdcca4dab';
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const GOOGLE_VISION_API_KEY = '373e9c877a79ff02aa4f15b22b573cd81458c49d';
 
-// Set up Google Cloud credentials
-const googleCloudKeyPath = path.join(process.cwd(), 'google-cloud-key.json');
-process.env.GOOGLE_APPLICATION_CREDENTIALS = googleCloudKeyPath;
+// Remove the Google Cloud credentials setup
+// const googleCloudKeyPath = path.join(process.cwd(), 'google-cloud-key.json');
+// process.env.GOOGLE_APPLICATION_CREDENTIALS = googleCloudKeyPath;
 
 // Simple in-memory cache for artist validation results
 const artistCache = new Map();
@@ -25,9 +25,8 @@ async function processImage(imageBuffer) {
   try {
     log('Starting image processing');
     
-    // Create a client with the API key
+    // Create a client with only the API key
     const client = new vision.ImageAnnotatorClient({
-      credentials: { client_email: null, private_key: null },
       apiKey: GOOGLE_VISION_API_KEY,
     });
     log('Vision client created using API key');

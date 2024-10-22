@@ -25,6 +25,8 @@ function logMessage(message, type = 'info') {
 
 export default async function handler(req, res) {
   logMessage('Upload handler called');
+  logMessage(`Request method: ${req.method}`);
+  logMessage(`Request headers: ${JSON.stringify(req.headers)}`);
 
   if (req.method !== 'POST') {
     logMessage('Method not allowed', 'error');
@@ -44,6 +46,9 @@ export default async function handler(req, res) {
       }
 
       logMessage('Form parsed successfully');
+      logMessage(`Fields: ${JSON.stringify(fields)}`);
+      logMessage(`Files: ${JSON.stringify(files)}`);
+
       const file = files.file;
 
       if (!file) {

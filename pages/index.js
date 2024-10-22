@@ -40,12 +40,6 @@ export default function Home() {
     const [openCVLoaded, setOpenCVLoaded] = useState(false);
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && window.cv) {
-            setOpenCVLoaded(true);
-        }
-    }, []);
-
-    useEffect(() => {
         let timer;
         if (loading) {
             timer = setInterval(() => {
@@ -103,17 +97,17 @@ export default function Home() {
             const img = new Image();
             img.onload = () => {
                 try {
-                    const mat = cv.imread(img);
-                    cv.cvtColor(mat, mat, cv.COLOR_RGBA2GRAY);
-                    cv.threshold(mat, mat, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+                    const mat = window.cv.imread(img);
+                    window.cv.cvtColor(mat, mat, window.cv.COLOR_RGBA2GRAY);
+                    window.cv.threshold(mat, mat, 0, 255, window.cv.THRESH_BINARY | window.cv.THRESH_OTSU);
                     
-                    let contours = new cv.MatVector();
-                    let hierarchy = new cv.Mat();
-                    cv.findContours(mat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                    let contours = new window.cv.MatVector();
+                    let hierarchy = new window.cv.Mat();
+                    window.cv.findContours(mat, contours, hierarchy, window.cv.RETR_EXTERNAL, window.cv.CHAIN_APPROX_SIMPLE);
                     
                     let texts = [];
                     for (let i = 0; i < contours.size(); ++i) {
-                        let rect = cv.boundingRect(contours.get(i));
+                        let rect = window.cv.boundingRect(contours.get(i));
                         if (rect.width > 10 && rect.height > 10) {
                             let roi = mat.roi(rect);
                             let text = recognizeText(roi);
@@ -149,6 +143,14 @@ export default function Home() {
 
     const submitPhoto = useCallback(async (file) => {
         console.log('submitPhoto called with file:', file.name);
+        if (!openCVLoaded) {
+            setNotification({ 
+                show: true, 
+                message: 'OpenCV.js is not loaded yet. Please wait a moment and try again.', 
+                type: 'error' 
+            });
+            return;
+        }
         setLoading(true);
         setLinksFetched(false);
 
@@ -171,7 +173,7 @@ export default function Home() {
         } finally {
             setLoading(false);
         }
-    }, [processImage]);
+    }, [processImage, openCVLoaded]);
 
     const handleOCRReviewConfirm = useCallback((confirmedData) => {
         console.log('OCR Review confirmed with data:', JSON.stringify(confirmedData, null, 2));

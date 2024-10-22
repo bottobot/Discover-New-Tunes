@@ -108,12 +108,12 @@ const OCRReview = ({ initialData, onConfirm }) => {
           <div key={index} style={styles.artistInput}>
             <input
               type="text"
-              value={artist.name}
+              value={artist.name || ''}
               onChange={(e) => handleArtistChange(index, 'name', e.target.value)}
               style={styles.artistName}
             />
             <select
-              value={artist.confidence}
+              value={artist.confidence || 'unknown'}
               onChange={(e) => handleArtistChange(index, 'confidence', e.target.value)}
               style={styles.confidence}
             >

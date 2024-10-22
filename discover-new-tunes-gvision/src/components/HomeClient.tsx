@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
-import Image from 'next/image';
-import Script from 'next/script';
+import React, { useState, useCallback } from 'react';
+import axios from 'axios';
 import styles from '../styles/Home.module.scss';
 import {
   Header,
@@ -52,14 +51,7 @@ const LoadingAnimationWithTimer = ({ elapsedTime }: { elapsedTime: number }) => 
   );
 };
 
-declare global {
-  interface Window {
-    cv: any;
-  }
-}
-
 export default function HomeClient() {
-    const [imageURL, setImageURL] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [ocrData, setOCRData] = useState<OCRReviewProps['initialData'] | null>(null);
     const [reviewedData, setReviewedData] = useState<any>(null);
@@ -69,27 +61,6 @@ export default function HomeClient() {
     const [linksFetched, setLinksFetched] = useState<boolean>(false);
     const [showOCRReview, setShowOCRReview] = useState<boolean>(false);
     const [elapsedTime, setElapsedTime] = useState<number>(0);
-    const [openCVLoaded, setOpenCVLoaded] = useState<boolean>(false);
-
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (loading) {
-            timer = setInterval(() => {
-                setElapsedTime((prevTime) => prevTime + 1);
-            }, 1000);
-        } else {
-            setElapsedTime(0);
-        }
-        return () => clearInterval(timer);
-    }, [loading]);
-
-    useEffect(() => {
-        return () => {
-            if (imageURL) {
-                URL.revokeObjectURL(imageURL);
-            }
-        };
-    }, [imageURL]);
 
     const fetchArtistLinks = useCallback(async (artistsToFetch: string[]) => {
         console.log('Fetching artist links for:', artistsToFetch);
@@ -120,95 +91,28 @@ export default function HomeClient() {
         }
     }, []);
 
-    const processImage = useCallback(async (file: File) => {
-        if (!openCVLoaded) {
-            throw new Error('OpenCV.js is not loaded yet. Please try again in a moment.');
-        }
-
-        return new Promise<OCRReviewProps['initialData']>((resolve, reject) => {
-            const img = new Image();
-            img.onload = async () => {
-                console.log('Image loaded successfully');
-                try {
-                    // Wait for OpenCV.js to be fully loaded
-                    await window.cv.ready;
-                    
-                    console.log('Starting image processing');
-                    const mat = window.cv.imread(img);
-                    console.log('Image read into OpenCV Mat');
-                    const gray = new (window.cv.Mat as any)();
-                    window.cv.cvtColor(mat, gray, window.cv.COLOR_RGBA2GRAY);
-                    console.log('Image converted to grayscale');
-                    
-                    const edges = new (window.cv.Mat as any)();
-                    window.cv.Canny(gray, edges, 50, 150, 3);
-                    console.log('Edge detection completed');
-                    
-                    const contours = new (window.cv.MatVector as any)();
-                    const hierarchy = new (window.cv.Mat as any)();
-                    window.cv.findContours(edges, contours, hierarchy, window.cv.RETR_EXTERNAL, window.cv.CHAIN_APPROX_SIMPLE);
-                    console.log(`Found ${contours.size()} contours`);
-                    
-                    let possibleTextRegions = [];
-                    for (let i = 0; i < contours.size(); ++i) {
-                        const rect = window.cv.boundingRect(contours.get(i));
-                        if (rect.width > 10 && rect.height > 10 && rect.width < mat.cols * 0.9) {
-                            possibleTextRegions.push({
-                                x: rect.x,
-                                y: rect.y,
-                                width: rect.width,
-                                height: rect.height
-                            });
-                        }
-                    }
-                    console.log(`Identified ${possibleTextRegions.length} possible text regions`);
-                    
-                    mat.delete();
-                    gray.delete();
-                    edges.delete();
-                    contours.delete();
-                    hierarchy.delete();
-                    
-                    console.log('Image processing completed successfully');
-                    resolve({
-                        artists: possibleTextRegions.map((_, index) => `Possible Artist ${index + 1}`),
-                        fullText: `Found ${possibleTextRegions.length} possible text regions`
-                    });
-                } catch (error) {
-                    console.error('Error during image processing:', error);
-                    reject(new Error(`Error processing image: ${(error as Error).message}`));
-                }
-            };
-            img.onerror = () => {
-                console.error('Failed to load image');
-                reject(new Error('Failed to load image'));
-            };
-            img.src = URL.createObjectURL(file);
-        });
-    }, [openCVLoaded]);
-
     const submitPhoto = useCallback(async (file: File) => {
         console.log('submitPhoto called with file:', file.name);
-        if (!openCVLoaded) {
-            console.log('OpenCV.js is not loaded yet');
-            setNotification({ 
-                show: true, 
-                message: 'OpenCV.js is not loaded yet. Please wait a moment and try again.', 
-                type: 'error' 
-            });
-            return;
-        }
         setLoading(true);
         setLinksFetched(false);
 
         try {
-            console.log('Starting image processing');
-            const result = await processImage(file);
-            console.log('Image processing result:', result);
-            
-            setOCRData(result);
-            setShowOCRReview(true);
-            setImageURL(URL.createObjectURL(file));
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await axios.post('/api/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            if (response.data.success) {
+                setOCRData({
+                    artists: response.data.artists,
+                    fullText: response.data.text,
+                });
+                setShowOCRReview(true);
+            } else {
+                throw new Error('Failed to process image');
+            }
         } catch (error) {
             console.error('Error in submitPhoto:', error);
             setNotification({ 
@@ -217,11 +121,10 @@ export default function HomeClient() {
                 type: 'error' 
             });
             setOCRData(null);
-            setImageURL('');
         } finally {
             setLoading(false);
         }
-    }, [processImage, openCVLoaded]);
+    }, []);
 
     const handleOCRReviewConfirm = useCallback((confirmedData: any) => {
         console.log('OCR Review confirmed with data:', JSON.stringify(confirmedData, null, 2));
@@ -253,76 +156,62 @@ export default function HomeClient() {
         setOCRData(null);
         setReviewedData(null);
         setLineup(null);
-        setImageURL('');
         setArtistLinks({});
         setLinksFetched(false);
         setShowOCRReview(false);
     }, []);
 
     return (
-        <>
-            <Script 
-                src="https://docs.opencv.org/4.5.2/opencv.js" 
-                strategy="beforeInteractive"
-                onLoad={() => {
-                    console.log('OpenCV.js script loaded');
-                    window.cv.onRuntimeInitialized = () => {
-                        console.log('OpenCV.js runtime initialized');
-                        setOpenCVLoaded(true);
-                    };
-                }}
-            />
-            <div>
-                <div className={`${styles.locateArtistsContainer} ${styles.resultsBackground} ${(reviewedData || lineup) ? "nonInitial" : ""}`}>
-                    <Header />
-                    {loading ? (
-                        <LoadingAnimationWithTimer elapsedTime={elapsedTime} />
-                    ) : showOCRReview && ocrData ? (
-                        <OCRReview initialData={ocrData} onConfirm={handleOCRReviewConfirm} />
-                    ) : reviewedData && !linksFetched ? (
-                        <div>
-                            <h2>Confirmed Information</h2>
-                            <p>Event Name: {reviewedData.eventInfo?.eventName || 'N/A'}</p>
-                            <p>Event Date: {reviewedData.eventInfo?.eventDate || 'N/A'}</p>
-                            <p>Event Location: {reviewedData.eventInfo?.eventLocation || 'N/A'}</p>
-                            <h3>Artists</h3>
-                            <ul>
-                                {reviewedData.artists.map((artist: string, index: number) => (
-                                    <li key={index}>{artist}</li>
-                                ))}
-                            </ul>
-                            <button onClick={() => fetchArtistLinks(reviewedData.artists)}>Search Artists on Spotify</button>
-                        </div>
-                    ) : reviewedData && linksFetched ? (
-                        <Lineup
-                            eventInfo={reviewedData.eventInfo}
-                            artists={reviewedData.artists}
-                            lineup={lineup}
-                            deleteArtistValue={markAsNotArtist}
-                            reset={resetLineup}
-                            artistLinks={artistLinks}
-                            fetchArtistLinks={fetchArtistLinks}
-                            isProcessing={loading}
-                        />
-                    ) : (
-                        <div className={styles.viewContainer}>
-                            <div id={styles.container}>
-                                <div className={styles.viewRenderer}>
-                                    <ContentLeft submitPhoto={submitPhoto} error={false} />
-                                    <div className={styles.vl}></div>
-                                    <ContentRight selectLineup={selectLineup} />
-                                </div>
+        <div>
+            <div className={`${styles.locateArtistsContainer} ${styles.resultsBackground} ${(reviewedData || lineup) ? "nonInitial" : ""}`}>
+                <Header />
+                {loading ? (
+                    <LoadingAnimationWithTimer elapsedTime={elapsedTime} />
+                ) : showOCRReview && ocrData ? (
+                    <OCRReview initialData={ocrData} onConfirm={handleOCRReviewConfirm} />
+                ) : reviewedData && !linksFetched ? (
+                    <div>
+                        <h2>Confirmed Information</h2>
+                        <p>Event Name: {reviewedData.eventInfo?.eventName || 'N/A'}</p>
+                        <p>Event Date: {reviewedData.eventInfo?.eventDate || 'N/A'}</p>
+                        <p>Event Location: {reviewedData.eventInfo?.eventLocation || 'N/A'}</p>
+                        <h3>Artists</h3>
+                        <ul>
+                            {reviewedData.artists.map((artist: string, index: number) => (
+                                <li key={index}>{artist}</li>
+                            ))}
+                        </ul>
+                        <button onClick={() => fetchArtistLinks(reviewedData.artists)}>Search Artists on Spotify</button>
+                    </div>
+                ) : reviewedData && linksFetched ? (
+                    <Lineup
+                        eventInfo={reviewedData.eventInfo}
+                        artists={reviewedData.artists}
+                        lineup={lineup}
+                        deleteArtistValue={markAsNotArtist}
+                        reset={resetLineup}
+                        artistLinks={artistLinks}
+                        fetchArtistLinks={fetchArtistLinks}
+                        isProcessing={loading}
+                    />
+                ) : (
+                    <div className={styles.viewContainer}>
+                        <div id={styles.container}>
+                            <div className={styles.viewRenderer}>
+                                <ContentLeft submitPhoto={submitPhoto} error={false} />
+                                <div className={styles.vl}></div>
+                                <ContentRight selectLineup={selectLineup} />
                             </div>
                         </div>
-                    )}
-                    <Notification
-                        show={notification.show}
-                        message={notification.message}
-                        type={notification.type}
-                    />
-                </div>
-                <MadeBy />
+                    </div>
+                )}
+                <Notification
+                    show={notification.show}
+                    message={notification.message}
+                    type={notification.type}
+                />
             </div>
-        </>
+            <MadeBy />
+        </div>
     );
 }

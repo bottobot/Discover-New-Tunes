@@ -30,9 +30,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: `Method not allowed: ${req.method}` });
   }
 
-  // Set a longer timeout (2 minutes)
-  res.setTimeout(120000, () => {
-    logMessage('Request timed out after 2 minutes', 'error');
+  // Set a longer timeout (10 minutes)
+  res.setTimeout(600000, () => {
+    logMessage('Request timed out after 10 minutes', 'error');
     res.status(504).json({ error: 'Request timed out' });
   });
 

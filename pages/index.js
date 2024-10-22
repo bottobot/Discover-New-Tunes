@@ -8,7 +8,6 @@ import ContentRight from '../components/ContentRight';
 import Lineup from '../components/Lineup';
 import OCRReview from '../components/OCRReview';
 import Notification from '../components/Notification';
-import LoadingAnimation from '../components/LoadingAnimation';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -42,6 +41,31 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+const LoadingAnimationWithTimer = () => {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds(prevSeconds => prevSeconds + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (totalSeconds) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainingSeconds = totalSeconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
+  return (
+    <div className={styles.loadingContainer}>
+      <div className={styles.loadingAnimation}></div>
+      <p>Processing... Time elapsed: {formatTime(seconds)}</p>
+    </div>
+  );
+};
 
 export default function Home() {
     const [imageURL, setImageURL] = useState('');
@@ -212,7 +236,7 @@ export default function Home() {
                 <div className={`${styles.locateArtistsContainer} ${styles.resultsBackground} ${(reviewedData || lineup) ? "nonInitial" : ""}`}>
                     <Header />
                     {loading ? (
-                        <LoadingAnimation />
+                        <LoadingAnimationWithTimer />
                     ) : showOCRReview && ocrData && Array.isArray(ocrData.artists) ? (
                         <OCRReview initialData={ocrData} onConfirm={handleOCRReviewConfirm} />
                     ) : reviewedData && !linksFetched ? (

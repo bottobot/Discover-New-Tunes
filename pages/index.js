@@ -215,15 +215,15 @@ export default function Home() {
                 <title>Discover New Tunes</title>
                 <meta name="description" content="Discover new tunes from lineup posters" />
                 <link rel="icon" href="/favicon.ico" />
-                <Script 
-                    src="https://docs.opencv.org/4.5.2/opencv.js" 
-                    strategy="beforeInteractive"
-                    onLoad={() => {
-                        console.log('OpenCV.js loaded');
-                        setOpenCVLoaded(true);
-                    }}
-                />
             </Head>
+            <Script 
+                src="https://docs.opencv.org/4.5.2/opencv.js" 
+                strategy="afterInteractive"
+                onLoad={() => {
+                    console.log('OpenCV.js loaded');
+                    setOpenCVLoaded(true);
+                }}
+            />
             <div>
                 <div className={`${styles.locateArtistsContainer} ${styles.resultsBackground} ${(reviewedData || lineup) ? "nonInitial" : ""}`}>
                     <Header />

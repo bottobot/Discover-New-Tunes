@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import { createWorker } from 'tesseract.js';
+import dynamic from 'next/dynamic';
 import styles from '../styles/Home.module.scss';
 import Header from '../components/Header';
 import MadeBy from '../components/MadeBy';
@@ -9,6 +9,8 @@ import ContentRight from '../components/ContentRight';
 import Lineup from '../components/Lineup';
 import OCRReview from '../components/OCRReview';
 import Notification from '../components/Notification';
+
+const Tesseract = dynamic(() => import('tesseract.js'), { ssr: false });
 
 const LoadingAnimationWithTimer = ({ elapsedTime }) => {
   const formatTime = (totalSeconds) => {
@@ -87,8 +89,10 @@ export default function Home() {
     }, []);
 
     const processImage = useCallback(async (file) => {
-        const worker = await createWorker('eng');
+        const worker = await Tesseract.createWorker('eng');
         try {
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
             const { data: { text } } = await worker.recognize(file);
             console.log('OCR Result:', text);
             

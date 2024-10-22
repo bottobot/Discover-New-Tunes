@@ -89,15 +89,18 @@ export default function Home() {
     }, []);
 
     const processImage = useCallback(async (file) => {
-        if (!openCVLoaded || typeof cv === 'undefined') {
+        if (!openCVLoaded) {
             throw new Error('OpenCV.js is not loaded yet. Please try again in a moment.');
         }
 
         return new Promise((resolve, reject) => {
             const img = new Image();
-            img.onload = () => {
+            img.onload = async () => {
                 console.log('Image loaded successfully');
                 try {
+                    // Wait for OpenCV.js to be fully loaded
+                    await cv.ready;
+                    
                     console.log('Starting image processing');
                     const mat = cv.imread(img);
                     console.log('Image read into OpenCV Mat');
@@ -154,7 +157,7 @@ export default function Home() {
 
     const submitPhoto = useCallback(async (file) => {
         console.log('submitPhoto called with file:', file.name);
-        if (!openCVLoaded || typeof cv === 'undefined') {
+        if (!openCVLoaded) {
             console.log('OpenCV.js is not loaded yet');
             setNotification({ 
                 show: true, 
@@ -233,10 +236,13 @@ export default function Home() {
             </Head>
             <Script 
                 src="https://docs.opencv.org/4.5.2/opencv.js" 
-                strategy="afterInteractive"
+                strategy="beforeInteractive"
                 onLoad={() => {
-                    console.log('OpenCV.js loaded');
-                    setOpenCVLoaded(true);
+                    console.log('OpenCV.js script loaded');
+                    cv.onRuntimeInitialized = () => {
+                        console.log('OpenCV.js runtime initialized');
+                        setOpenCVLoaded(true);
+                    };
                 }}
             />
             <div>

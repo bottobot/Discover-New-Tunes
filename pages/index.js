@@ -43,9 +43,13 @@ export default function Home() {
         script.src = 'https://docs.opencv.org/4.5.2/opencv.js';
         script.async = true;
         script.onload = () => {
-            cv['onRuntimeInitialized'] = () => {
-                setOpenCVLoaded(true);
-            };
+            if (typeof cv !== 'undefined') {
+                cv['onRuntimeInitialized'] = () => {
+                    setOpenCVLoaded(true);
+                };
+            } else {
+                console.error('OpenCV.js failed to load');
+            }
         };
         document.body.appendChild(script);
 

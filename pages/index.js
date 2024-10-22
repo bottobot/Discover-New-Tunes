@@ -185,8 +185,8 @@ export default function Home() {
         console.log('OCR Review confirmed with data:', JSON.stringify(confirmedData, null, 2));
         setReviewedData(confirmedData);
         setShowOCRReview(false);
-        fetchArtistLinks(confirmedData.artists);
-    }, [fetchArtistLinks]);
+        // We're not fetching artist links here anymore
+    }, []);
 
     const selectLineup = useCallback((event) => {
         const selectedLineup = event.target.closest("button").getAttribute("lineup");

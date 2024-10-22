@@ -104,10 +104,6 @@ export default function Home() {
             
             const response = await fetch('/api/upload', {
                 method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    // Remove 'Content-Type' header to let the browser set it with the correct boundary for FormData
-                },
                 body: formData,
             });
             

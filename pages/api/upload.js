@@ -20,21 +20,22 @@ function logMessage(message, type = 'info') {
   } else {
     console.log(logMessage);
   }
-  fs.appendFileSync(path.join(process.cwd(), 'upload.log'), logMessage + '\n');
+  // Remove file writing for Vercel environment
+  // fs.appendFileSync(path.join(process.cwd(), 'upload.log'), logMessage + '\n');
 }
 
-export default async function handler(req, res) {
-  logMessage('Upload handler called');
-  logMessage(`Request method: ${req.method}`);
-  logMessage(`Request headers: ${JSON.stringify(req.headers)}`);
+export default function handler(req, res) {
+  return new Promise((resolve, reject) => {
+    logMessage('Upload handler called');
+    logMessage(`Request method: ${req.method}`);
+    logMessage(`Request headers: ${JSON.stringify(req.headers)}`);
 
-  if (req.method !== 'POST') {
-    logMessage(`Method not allowed: ${req.method}`, 'error');
-    return res.status(405).json({ error: `Method not allowed: ${req.method}` });
-  }
+    if (req.method !== 'POST') {
+      logMessage(`Method not allowed: ${req.method}`, 'error');
+      res.status(405).json({ error: `Method not allowed: ${req.method}` });
+      return resolve();
+    }
 
-  try {
-    logMessage('Parsing form');
     const form = new formidable.IncomingForm();
     form.maxFileSize = MAX_FILE_SIZE;
 
@@ -42,7 +43,8 @@ export default async function handler(req, res) {
       if (err) {
         logMessage(`Form parsing error: ${err.message}`, 'error');
         logMessage(`Form parsing error stack: ${err.stack}`, 'error');
-        return res.status(500).json({ error: 'Form parsing failed', details: err.message });
+        res.status(500).json({ error: 'Form parsing failed', details: err.message });
+        return resolve();
       }
 
       logMessage('Form parsed successfully');
@@ -53,12 +55,14 @@ export default async function handler(req, res) {
 
       if (!file) {
         logMessage('No file uploaded', 'error');
-        return res.status(400).json({ error: 'No file uploaded' });
+        res.status(400).json({ error: 'No file uploaded' });
+        return resolve();
       }
 
       if (!ALLOWED_FILE_TYPES.includes(file.mimetype)) {
         logMessage(`Invalid file type: ${file.mimetype}`, 'error');
-        return res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG, and GIF are allowed.' });
+        res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG, and GIF are allowed.' });
+        return resolve();
       }
 
       logMessage(`File received: ${file.originalFilename}`);
@@ -73,16 +77,14 @@ export default async function handler(req, res) {
         const result = await processImage(imageBuffer);
         logMessage('Image processed successfully');
         logMessage(`Full result object: ${JSON.stringify(result, null, 2)}`);
-        return res.status(200).json(result);
+        res.status(200).json(result);
+        return resolve();
       } catch (processError) {
         logMessage(`Image processing error: ${processError.message}`, 'error');
         logMessage(`Image processing error stack: ${processError.stack}`, 'error');
-        return res.status(500).json({ error: 'Image processing failed', details: processError.message, stack: processError.stack });
+        res.status(500).json({ error: 'Image processing failed', details: processError.message, stack: processError.stack });
+        return resolve();
       }
     });
-  } catch (error) {
-    logMessage(`Unhandled error: ${error.message}`, 'error');
-    logMessage(`Unhandled error stack: ${error.stack}`, 'error');
-    return res.status(500).json({ error: 'Internal server error', details: error.message, stack: error.stack });
-  }
+  });
 }

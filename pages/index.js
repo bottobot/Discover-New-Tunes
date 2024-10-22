@@ -39,23 +39,18 @@ export default function Home() {
     const [openCVLoaded, setOpenCVLoaded] = useState(false);
 
     useEffect(() => {
-        const script = document.createElement('script');
-        script.src = 'https://docs.opencv.org/4.5.2/opencv.js';
-        script.async = true;
-        script.onload = () => {
-            if (typeof cv !== 'undefined') {
-                cv['onRuntimeInitialized'] = () => {
-                    setOpenCVLoaded(true);
+        const loadOpenCV = async () => {
+            if (typeof window !== 'undefined') {
+                window.Module = {
+                    onRuntimeInitialized: () => {
+                        console.log('OpenCV.js initialized');
+                        setOpenCVLoaded(true);
+                    }
                 };
-            } else {
-                console.error('OpenCV.js failed to load');
+                await import('https://docs.opencv.org/4.5.2/opencv.js');
             }
         };
-        document.body.appendChild(script);
-
-        return () => {
-            document.body.removeChild(script);
-        };
+        loadOpenCV();
     }, []);
 
     useEffect(() => {

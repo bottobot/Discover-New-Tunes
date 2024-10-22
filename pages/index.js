@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
+import { createWorker } from 'tesseract.js';
 import styles from '../styles/Home.module.scss';
 import Header from '../components/Header';
 import MadeBy from '../components/MadeBy';
@@ -9,50 +10,7 @@ import Lineup from '../components/Lineup';
 import OCRReview from '../components/OCRReview';
 import Notification from '../components/Notification';
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    this.setState({ error, errorInfo });
-    console.error("Caught an error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div>
-          <h1>Something went wrong.</h1>
-          <details style={{ whiteSpace: 'pre-wrap' }}>
-            {this.state.error && this.state.error.toString()}
-            <br />
-            {this.state.errorInfo && this.state.errorInfo.componentStack}
-          </details>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-const LoadingAnimationWithTimer = () => {
-  const [seconds, setSeconds] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSeconds(prevSeconds => prevSeconds + 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
+const LoadingAnimationWithTimer = ({ elapsedTime }) => {
   const formatTime = (totalSeconds) => {
     const minutes = Math.floor(totalSeconds / 60);
     const remainingSeconds = totalSeconds % 60;
@@ -62,7 +20,7 @@ const LoadingAnimationWithTimer = () => {
   return (
     <div className={styles.loadingContainer}>
       <div className={styles.loadingAnimation}></div>
-      <p>Processing... Time elapsed: {formatTime(seconds)}</p>
+      <p>Processing... Time elapsed: {formatTime(elapsedTime)}</p>
     </div>
   );
 };
@@ -77,6 +35,19 @@ export default function Home() {
     const [artistLinks, setArtistLinks] = useState({});
     const [linksFetched, setLinksFetched] = useState(false);
     const [showOCRReview, setShowOCRReview] = useState(false);
+    const [elapsedTime, setElapsedTime] = useState(0);
+
+    useEffect(() => {
+        let timer;
+        if (loading) {
+            timer = setInterval(() => {
+                setElapsedTime((prevTime) => prevTime + 1);
+            }, 1000);
+        } else {
+            setElapsedTime(0);
+        }
+        return () => clearInterval(timer);
+    }, [loading]);
 
     useEffect(() => {
         return () => {
@@ -115,59 +86,38 @@ export default function Home() {
         }
     }, []);
 
+    const processImage = useCallback(async (file) => {
+        const worker = await createWorker('eng');
+        try {
+            const { data: { text } } = await worker.recognize(file);
+            console.log('OCR Result:', text);
+            
+            // Simple artist extraction (you may want to improve this logic)
+            const artists = text.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0 && !line.match(/^\d+$/)); // Remove empty lines and lines with only numbers
+            
+            return {
+                artists,
+                fullText: text
+            };
+        } finally {
+            await worker.terminate();
+        }
+    }, []);
+
     const submitPhoto = useCallback(async (file) => {
         console.log('submitPhoto called with file:', file.name);
         setLoading(true);
         setLinksFetched(false);
-        const formData = new FormData();
-        formData.append('file', file);
 
         try {
-            console.log('Preparing to send POST request to /api/upload');
-            console.log('FormData contents:', [...formData.entries()]);
+            const result = await processImage(file);
+            console.log('Image processing result:', result);
             
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
-            
-            console.log('Received response from /api/upload');
-            console.log('Response status:', response.status);
-            console.log('Response headers:', [...response.headers.entries()]);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response body:', errorText);
-                let errorMessage = `Upload failed with status ${response.status}.`;
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMessage += ` Error: ${errorJson.error}`;
-                    if (errorJson.message) errorMessage += ` Message: ${errorJson.message}`;
-                    if (errorJson.details) console.error('Error details:', errorJson.details);
-                    if (errorJson.stack) console.error('Error stack:', errorJson.stack);
-                } catch (e) {
-                    errorMessage += ` Error: ${errorText}`;
-                }
-                throw new Error(errorMessage);
-            }
-            
-            const data = await response.json();
-            console.log('Parsed response data:', JSON.stringify(data, null, 2));
-            
-            if (!data || !Array.isArray(data.artists)) {
-                console.error('Invalid response format. Expected data.artists to be an array.');
-                console.error('Received data:', data);
-                throw new Error('Invalid response format');
-            }
-            
-            console.log('Setting OCR data:', JSON.stringify(data, null, 2));
-            setOCRData({
-                artists: data.artists,
-                fullText: data.fullText
-            });
+            setOCRData(result);
             setShowOCRReview(true);
             setImageURL(URL.createObjectURL(file));
-            console.log('Updated imageURL state');
         } catch (error) {
             console.error('Error in submitPhoto:', error);
             setNotification({ 
@@ -179,9 +129,8 @@ export default function Home() {
             setImageURL('');
         } finally {
             setLoading(false);
-            console.log('Set loading to false');
         }
-    }, []);
+    }, [processImage]);
 
     const handleOCRReviewConfirm = useCallback((confirmedData) => {
         console.log('OCR Review confirmed with data:', JSON.stringify(confirmedData, null, 2));
@@ -231,57 +180,55 @@ export default function Home() {
     }, []);
 
     return (
-        <ErrorBoundary>
-            <div>
-                <div className={`${styles.locateArtistsContainer} ${styles.resultsBackground} ${(reviewedData || lineup) ? "nonInitial" : ""}`}>
-                    <Header />
-                    {loading ? (
-                        <LoadingAnimationWithTimer />
-                    ) : showOCRReview && ocrData && Array.isArray(ocrData.artists) ? (
-                        <OCRReview initialData={ocrData} onConfirm={handleOCRReviewConfirm} />
-                    ) : reviewedData && !linksFetched ? (
-                        <div>
-                            <h2>Confirmed Information</h2>
-                            <p>Event Name: {reviewedData.eventInfo.eventName}</p>
-                            <p>Event Date: {reviewedData.eventInfo.eventDate}</p>
-                            <p>Event Location: {reviewedData.eventInfo.eventLocation}</p>
-                            <h3>Artists</h3>
-                            <ul>
-                                {reviewedData.artists.map((artist, index) => (
-                                    <li key={index}>{artist}</li>
-                                ))}
-                            </ul>
-                            <button onClick={() => fetchArtistLinks(reviewedData.artists)}>Search Artists on Spotify</button>
-                        </div>
-                    ) : reviewedData && linksFetched ? (
-                        <Lineup
-                            eventInfo={reviewedData.eventInfo}
-                            artists={reviewedData.artists}
-                            lineup={lineup}
-                            deleteArtistValue={markAsNotArtist}
-                            reset={resetLineup}
-                            artistLinks={artistLinks}
-                            fetchArtistLinks={fetchArtistLinks}
-                        />
-                    ) : (
-                        <div className={styles.viewContainer}>
-                            <div id={styles.container}>
-                                <div className={styles.viewRenderer}>
-                                    <ContentLeft submitPhoto={submitPhoto} error={false} />
-                                    <div className={styles.vl}></div>
-                                    <ContentRight selectLineup={selectLineup} />
-                                </div>
+        <div>
+            <div className={`${styles.locateArtistsContainer} ${styles.resultsBackground} ${(reviewedData || lineup) ? "nonInitial" : ""}`}>
+                <Header />
+                {loading ? (
+                    <LoadingAnimationWithTimer elapsedTime={elapsedTime} />
+                ) : showOCRReview && ocrData && Array.isArray(ocrData.artists) ? (
+                    <OCRReview initialData={ocrData} onConfirm={handleOCRReviewConfirm} />
+                ) : reviewedData && !linksFetched ? (
+                    <div>
+                        <h2>Confirmed Information</h2>
+                        <p>Event Name: {reviewedData.eventInfo?.eventName || 'N/A'}</p>
+                        <p>Event Date: {reviewedData.eventInfo?.eventDate || 'N/A'}</p>
+                        <p>Event Location: {reviewedData.eventInfo?.eventLocation || 'N/A'}</p>
+                        <h3>Artists</h3>
+                        <ul>
+                            {reviewedData.artists.map((artist, index) => (
+                                <li key={index}>{artist}</li>
+                            ))}
+                        </ul>
+                        <button onClick={() => fetchArtistLinks(reviewedData.artists)}>Search Artists on Spotify</button>
+                    </div>
+                ) : reviewedData && linksFetched ? (
+                    <Lineup
+                        eventInfo={reviewedData.eventInfo}
+                        artists={reviewedData.artists}
+                        lineup={lineup}
+                        deleteArtistValue={markAsNotArtist}
+                        reset={resetLineup}
+                        artistLinks={artistLinks}
+                        fetchArtistLinks={fetchArtistLinks}
+                    />
+                ) : (
+                    <div className={styles.viewContainer}>
+                        <div id={styles.container}>
+                            <div className={styles.viewRenderer}>
+                                <ContentLeft submitPhoto={submitPhoto} error={false} />
+                                <div className={styles.vl}></div>
+                                <ContentRight selectLineup={selectLineup} />
                             </div>
                         </div>
-                    )}
-                    <Notification
-                        show={notification.show}
-                        message={notification.message}
-                        type={notification.type}
-                    />
-                </div>
-                <MadeBy />
+                    </div>
+                )}
+                <Notification
+                    show={notification.show}
+                    message={notification.message}
+                    type={notification.type}
+                />
             </div>
-        </ErrorBoundary>
+            <MadeBy />
+        </div>
     );
 }

@@ -89,7 +89,7 @@ export default function Home() {
     }, []);
 
     const processImage = useCallback(async (file) => {
-        if (!openCVLoaded) {
+        if (!openCVLoaded || typeof cv === 'undefined') {
             throw new Error('OpenCV.js is not loaded yet. Please try again in a moment.');
         }
 
@@ -99,24 +99,24 @@ export default function Home() {
                 console.log('Image loaded successfully');
                 try {
                     console.log('Starting image processing');
-                    const mat = window.cv.imread(img);
+                    const mat = cv.imread(img);
                     console.log('Image read into OpenCV Mat');
-                    const gray = new window.cv.Mat();
-                    window.cv.cvtColor(mat, gray, window.cv.COLOR_RGBA2GRAY);
+                    const gray = new cv.Mat();
+                    cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY);
                     console.log('Image converted to grayscale');
                     
-                    const edges = new window.cv.Mat();
-                    window.cv.Canny(gray, edges, 50, 150, 3);
+                    const edges = new cv.Mat();
+                    cv.Canny(gray, edges, 50, 150, 3);
                     console.log('Edge detection completed');
                     
-                    const contours = new window.cv.MatVector();
-                    const hierarchy = new window.cv.Mat();
-                    window.cv.findContours(edges, contours, hierarchy, window.cv.RETR_EXTERNAL, window.cv.CHAIN_APPROX_SIMPLE);
+                    const contours = new cv.MatVector();
+                    const hierarchy = new cv.Mat();
+                    cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
                     console.log(`Found ${contours.size()} contours`);
                     
                     let possibleTextRegions = [];
                     for (let i = 0; i < contours.size(); ++i) {
-                        const rect = window.cv.boundingRect(contours.get(i));
+                        const rect = cv.boundingRect(contours.get(i));
                         if (rect.width > 10 && rect.height > 10 && rect.width < mat.cols * 0.9) {
                             possibleTextRegions.push({
                                 x: rect.x,
@@ -154,7 +154,7 @@ export default function Home() {
 
     const submitPhoto = useCallback(async (file) => {
         console.log('submitPhoto called with file:', file.name);
-        if (!openCVLoaded) {
+        if (!openCVLoaded || typeof cv === 'undefined') {
             console.log('OpenCV.js is not loaded yet');
             setNotification({ 
                 show: true, 

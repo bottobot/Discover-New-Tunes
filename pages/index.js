@@ -114,7 +114,17 @@ export default function Home() {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Error response body:', errorText);
-                throw new Error(`Upload failed with status ${response.status}. Error: ${errorText}`);
+                let errorMessage = `Upload failed with status ${response.status}.`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage += ` Error: ${errorJson.error}`;
+                    if (errorJson.message) errorMessage += ` Message: ${errorJson.message}`;
+                    if (errorJson.details) console.error('Error details:', errorJson.details);
+                    if (errorJson.stack) console.error('Error stack:', errorJson.stack);
+                } catch (e) {
+                    errorMessage += ` Error: ${errorText}`;
+                }
+                throw new Error(errorMessage);
             }
             
             const data = await response.json();

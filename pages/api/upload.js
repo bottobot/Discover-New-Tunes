@@ -66,18 +66,37 @@ export default function handler(req, res) {
       logMessage(`File type: ${file.mimetype}`);
       
       try {
-        logMessage('Processing image');
+        logMessage('Starting image processing');
+        logMessage(`File path: ${file.filepath}`);
         const result = await processImage(file.filepath);
         logMessage('Image processed successfully');
-        logMessage(`Full result object: ${JSON.stringify(result, null, 2)}`);
+        logMessage(`Result: ${JSON.stringify(result, null, 2)}`);
         res.status(200).json(result);
         return resolve();
       } catch (processError) {
         logMessage(`Image processing error: ${processError.message}`, 'error');
         logMessage(`Image processing error stack: ${processError.stack}`, 'error');
-        res.status(500).json({ error: 'Image processing failed', details: processError.message, stack: processError.stack });
+        logMessage(`Error details: ${JSON.stringify(processError, Object.getOwnPropertyNames(processError))}`, 'error');
+        res.status(500).json({ 
+          error: 'Image processing failed', 
+          message: processError.message,
+          stack: processError.stack,
+          details: JSON.stringify(processError, Object.getOwnPropertyNames(processError))
+        });
         return resolve();
       }
+    });
+
+    // Add a timeout to catch potential hanging requests
+    const timeout = setTimeout(() => {
+      logMessage('Request timed out', 'error');
+      res.status(504).json({ error: 'Request timed out' });
+      return resolve();
+    }, 50000); // 50 seconds timeout
+
+    // Clear the timeout if the request completes
+    res.on('finish', () => {
+      clearTimeout(timeout);
     });
   });
 }

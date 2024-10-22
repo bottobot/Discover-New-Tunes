@@ -29,8 +29,8 @@ export default async function handler(req, res) {
   logMessage(`Request headers: ${JSON.stringify(req.headers)}`);
 
   if (req.method !== 'POST') {
-    logMessage('Method not allowed', 'error');
-    return res.status(405).json({ error: 'Method not allowed' });
+    logMessage(`Method not allowed: ${req.method}`, 'error');
+    return res.status(405).json({ error: `Method not allowed: ${req.method}` });
   }
 
   try {

@@ -30,7 +30,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: `Method not allowed: ${req.method}` });
   }
 
+  // Set a longer timeout (2 minutes)
+  res.setTimeout(120000, () => {
+    logMessage('Request timed out after 2 minutes', 'error');
+    res.status(504).json({ error: 'Request timed out' });
+  });
+
   try {
+    logMessage('Initializing form parser');
     const form = new formidable.IncomingForm();
     form.maxFileSize = MAX_FILE_SIZE;
 
@@ -63,8 +70,10 @@ export default async function handler(req, res) {
     
     logMessage('Starting image processing');
     logMessage(`File path: ${file.filepath}`);
+    const processingStartTime = Date.now();
     const result = await processImage(file.filepath);
-    logMessage('Image processed successfully');
+    const processingEndTime = Date.now();
+    logMessage(`Image processing completed in ${processingEndTime - processingStartTime}ms`);
     logMessage(`Result: ${JSON.stringify(result, null, 2)}`);
     return res.status(200).json(result);
   } catch (error) {

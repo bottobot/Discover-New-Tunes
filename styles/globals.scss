@@ -1,20 +1,7 @@
 @import "../styles/variables.module.scss";
 @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 
-/*@font-face {
-    font-family: 'poppins';
-    src: url('../fonts/poppins/Poppins-Regular.ttf') format('truetype'),
-        url('../fonts/poppins/Poppins-Bold.ttf'),
-        url('../fonts/poppins/Poppins-Italic.ttf') format('truetype');
-
-    NEED TO ADD FONTS FOLDER BACK...
-}*/ 
-
 html, body {
-    cursor: url('../public/images/icons/note.png'), pointer;
-    .btn, .link, .uploadBTN, .madeBy {
-        cursor: url('../public/images/icons/note.png'), pointer !important;
-    }   
     font-family: 'Poppins', sans-serif;
     margin: 0;
     background: url("../public/images/cassete-purple.png") no-repeat center center fixed;
@@ -22,7 +9,7 @@ html, body {
     @media #{$mobile} {
         background-attachment: scroll;
         height: 100vh;
-        background: url("../public/images/cassete-purple.png") no-repeat center center fixed neeed thissssss;
+        background: url("../public/images/cassete-purple.png") no-repeat center center fixed;
         background-size: cover;
     }
     &.loadingBackground {
@@ -34,9 +21,6 @@ html, body {
             .loadingText {
                 color: #2b2b2b;
                 font-size: 40px;
-                /*position: absolute;*/
-                /*left: 50%;*/
-                /*margin-left: -225PX;*/
                 padding-top: 30px;
                 margin-top: 0px;
                 text-align: center;

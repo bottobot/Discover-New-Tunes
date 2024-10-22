@@ -14,6 +14,7 @@ const styles = {
   artistInput: {
     display: 'flex',
     marginBottom: '10px',
+    alignItems: 'center',
   },
   artistName: {
     flex: 1,
@@ -28,6 +29,13 @@ const styles = {
   button: {
     padding: '5px 10px',
     cursor: 'pointer',
+  },
+  addButton: {
+    padding: '5px 10px',
+    marginRight: '10px',
+    cursor: 'pointer',
+    fontSize: '20px',
+    lineHeight: '1',
   },
 };
 
@@ -61,8 +69,10 @@ const OCRReview = ({ initialData, onConfirm }) => {
     setArtists(newArtists);
   };
 
-  const handleAddArtist = () => {
-    setArtists([...artists, { name: '', confidence: 'unknown' }]);
+  const handleAddArtist = (index) => {
+    const newArtists = [...artists];
+    newArtists.splice(index + 1, 0, { name: '', confidence: 'unknown' });
+    setArtists(newArtists);
   };
 
   const handleRemoveArtist = (index) => {
@@ -106,6 +116,7 @@ const OCRReview = ({ initialData, onConfirm }) => {
       {artists.length > 0 ? (
         artists.map((artist, index) => (
           <div key={index} style={styles.artistInput}>
+            <button onClick={() => handleAddArtist(index)} style={styles.addButton}>+</button>
             <input
               type="text"
               value={artist.name || ''}
@@ -127,7 +138,7 @@ const OCRReview = ({ initialData, onConfirm }) => {
       ) : (
         <p>No artists found. You can add artists manually.</p>
       )}
-      <button onClick={handleAddArtist} style={styles.button}>Add Artist</button>
+      <button onClick={() => handleAddArtist(artists.length - 1)} style={styles.button}>Add Artist</button>
       <button onClick={() => {
         console.log('Confirming OCR review with data:', { eventInfo, artists });
         onConfirm({ eventInfo, artists });

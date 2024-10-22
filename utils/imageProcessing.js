@@ -17,7 +17,7 @@ function log(message) {
   const timestamp = new Date().toISOString();
   const logMessage = `${timestamp}: ${message}`;
   console.log(logMessage);
-  fs.appendFileSync(path.join(process.cwd(), 'image-processing.log'), logMessage + '\n');
+  // Removed file system operation
 }
 
 async function processImage(imageBuffer) {

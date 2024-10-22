@@ -87,27 +87,51 @@ export default function Home() {
     }, []);
 
     const processImage = useCallback(async (file) => {
-        const Tesseract = await import('tesseract.js');
-        const worker = await Tesseract.createWorker('eng');
-        try {
-            await worker.loadLanguage('eng');
-            await worker.initialize('eng');
-            const { data: { text } } = await worker.recognize(file);
-            console.log('OCR Result:', text);
-            
-            // Simple artist extraction (you may want to improve this logic)
-            const artists = text.split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0 && !line.match(/^\d+$/)); // Remove empty lines and lines with only numbers
-            
-            return {
-                artists,
-                fullText: text
+        const cv = await import('opencv.js');
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const mat = cv.imread(img);
+                cv.cvtColor(mat, mat, cv.COLOR_RGBA2GRAY);
+                cv.threshold(mat, mat, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+                
+                let contours = new cv.MatVector();
+                let hierarchy = new cv.Mat();
+                cv.findContours(mat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                
+                let texts = [];
+                for (let i = 0; i < contours.size(); ++i) {
+                    let rect = cv.boundingRect(contours.get(i));
+                    if (rect.width > 10 && rect.height > 10) {
+                        let roi = mat.roi(rect);
+                        let text = recognizeText(roi); // Implement this function
+                        if (text) {
+                            texts.push(text);
+                        }
+                        roi.delete();
+                    }
+                }
+                
+                contours.delete();
+                hierarchy.delete();
+                mat.delete();
+                
+                resolve({
+                    artists: texts,
+                    fullText: texts.join('\n')
+                });
             };
-        } finally {
-            await worker.terminate();
-        }
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
     }, []);
+
+    // Implement a simple text recognition function
+    const recognizeText = (mat) => {
+        // This is a placeholder. In a real implementation, you'd use a more sophisticated
+        // text recognition method here, possibly using a pre-trained LSTM model.
+        return "Placeholder Artist";
+    };
 
     const submitPhoto = useCallback(async (file) => {
         console.log('submitPhoto called with file:', file.name);

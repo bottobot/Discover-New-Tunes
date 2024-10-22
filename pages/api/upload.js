@@ -1,6 +1,4 @@
 import formidable from 'formidable';
-import fs from 'fs';
-import path from 'path';
 import { processImage } from '../../utils/imageProcessing';
 
 export const config = {
@@ -20,8 +18,6 @@ function logMessage(message, type = 'info') {
   } else {
     console.log(logMessage);
   }
-  // Remove file writing for Vercel environment
-  // fs.appendFileSync(path.join(process.cwd(), 'upload.log'), logMessage + '\n');
 }
 
 export default function handler(req, res) {
@@ -70,11 +66,8 @@ export default function handler(req, res) {
       logMessage(`File type: ${file.mimetype}`);
       
       try {
-        logMessage('Reading file');
-        const imageBuffer = fs.readFileSync(file.filepath);
-        logMessage('Image buffer read successfully');
         logMessage('Processing image');
-        const result = await processImage(imageBuffer);
+        const result = await processImage(file.filepath);
         logMessage('Image processed successfully');
         logMessage(`Full result object: ${JSON.stringify(result, null, 2)}`);
         res.status(200).json(result);

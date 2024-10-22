@@ -37,6 +37,10 @@ const styles = {
     fontSize: '20px',
     lineHeight: '1',
   },
+  summaryText: {
+    marginBottom: '20px',
+    fontStyle: 'italic',
+  },
 };
 
 const OCRReview = ({ initialData, onConfirm }) => {
@@ -46,13 +50,15 @@ const OCRReview = ({ initialData, onConfirm }) => {
     eventLocation: '',
   });
   const [artists, setArtists] = useState([]);
+  const [fullText, setFullText] = useState('');
   const [error, setError] = useState(null);
 
   useEffect(() => {
     console.log('OCRReview: initialData received:', JSON.stringify(initialData, null, 2));
     if (initialData && Array.isArray(initialData.artists)) {
       console.log('Setting artists state with:', initialData.artists);
-      setArtists(initialData.artists);
+      setArtists(initialData.artists.map(artist => ({ name: artist, confidence: 'unknown' })));
+      setFullText(initialData.fullText || '');
     } else {
       console.warn('Invalid or missing artists data in initialData');
       setError('Invalid or missing artists data');
@@ -87,6 +93,7 @@ const OCRReview = ({ initialData, onConfirm }) => {
   return (
     <div style={styles.container}>
       <h2>Review OCR Results</h2>
+      <p style={styles.summaryText}>{fullText}</p>
       <div>
         <h3>Event Information</h3>
         <input
@@ -112,7 +119,7 @@ const OCRReview = ({ initialData, onConfirm }) => {
         />
       </div>
       <h3>Artist Names</h3>
-      <p>Please review and edit the artist names extracted from the image:</p>
+      <p>Please review and edit the possible artist names extracted from the image:</p>
       {artists.length > 0 ? (
         artists.map((artist, index) => (
           <div key={index} style={styles.artistInput}>
@@ -136,12 +143,12 @@ const OCRReview = ({ initialData, onConfirm }) => {
           </div>
         ))
       ) : (
-        <p>No artists found. You can add artists manually.</p>
+        <p>No potential artists found. You can add artists manually.</p>
       )}
       <button onClick={() => handleAddArtist(artists.length - 1)} style={styles.button}>Add Artist</button>
       <button onClick={() => {
         console.log('Confirming OCR review with data:', { eventInfo, artists });
-        onConfirm({ eventInfo, artists });
+        onConfirm({ eventInfo, artists: artists.map(a => a.name) });
       }} style={styles.button}>Confirm</button>
     </div>
   );

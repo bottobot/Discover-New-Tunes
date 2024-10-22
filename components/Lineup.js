@@ -4,7 +4,7 @@ import Link from 'next/link';
 import PropTypes from 'prop-types';
 import styles from '../styles/Lineup.module.scss';
 
-const Lineup = React.memo(({ eventInfo, artists, lineup, deleteArtistValue, reset, artistLinks, fetchArtistLinks }) => {
+const Lineup = React.memo(({ eventInfo, artists, lineup, deleteArtistValue, reset, artistLinks, fetchArtistLinks, isProcessing }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [fetchedArtists, setFetchedArtists] = useState([]);
 
@@ -47,6 +47,14 @@ const Lineup = React.memo(({ eventInfo, artists, lineup, deleteArtistValue, rese
     console.log('Rendering Lineup component, isLoading:', isLoading);
     console.log('Current artists array:', artists);
 
+    if (isProcessing) {
+        return (
+            <section className={styles.container}>
+                <p>Processing image... Please wait.</p>
+            </section>
+        );
+    }
+
     return (
         <section className={styles.container}>
             <header className={styles.header}>
@@ -58,7 +66,7 @@ const Lineup = React.memo(({ eventInfo, artists, lineup, deleteArtistValue, rese
             </header>
             <div className={styles.content}>
                 {artists.length === 0 ? (
-                    <p>No artists found. Please upload an image with artist names.</p>
+                    <p>No artists found. This could be due to the image quality or content. Please try uploading a different image or manually add artists.</p>
                 ) : (
                     <ul className={styles.artistList}>
                         {artists.map((artist) => {
@@ -108,7 +116,8 @@ Lineup.propTypes = {
     deleteArtistValue: PropTypes.func.isRequired,
     reset: PropTypes.func.isRequired,
     artistLinks: PropTypes.object.isRequired,
-    fetchArtistLinks: PropTypes.func.isRequired
+    fetchArtistLinks: PropTypes.func.isRequired,
+    isProcessing: PropTypes.bool
 };
 
 Lineup.displayName = 'Lineup';

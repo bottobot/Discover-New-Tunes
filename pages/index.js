@@ -96,54 +96,66 @@ export default function Home() {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
+                console.log('Image loaded successfully');
                 try {
+                    console.log('Starting image processing');
                     const mat = window.cv.imread(img);
-                    window.cv.cvtColor(mat, mat, window.cv.COLOR_RGBA2GRAY);
-                    window.cv.threshold(mat, mat, 0, 255, window.cv.THRESH_BINARY | window.cv.THRESH_OTSU);
+                    console.log('Image read into OpenCV Mat');
+                    const gray = new window.cv.Mat();
+                    window.cv.cvtColor(mat, gray, window.cv.COLOR_RGBA2GRAY);
+                    console.log('Image converted to grayscale');
                     
-                    let contours = new window.cv.MatVector();
-                    let hierarchy = new window.cv.Mat();
-                    window.cv.findContours(mat, contours, hierarchy, window.cv.RETR_EXTERNAL, window.cv.CHAIN_APPROX_SIMPLE);
+                    const edges = new window.cv.Mat();
+                    window.cv.Canny(gray, edges, 50, 150, 3);
+                    console.log('Edge detection completed');
                     
-                    let texts = [];
+                    const contours = new window.cv.MatVector();
+                    const hierarchy = new window.cv.Mat();
+                    window.cv.findContours(edges, contours, hierarchy, window.cv.RETR_EXTERNAL, window.cv.CHAIN_APPROX_SIMPLE);
+                    console.log(`Found ${contours.size()} contours`);
+                    
+                    let possibleTextRegions = [];
                     for (let i = 0; i < contours.size(); ++i) {
-                        let rect = window.cv.boundingRect(contours.get(i));
-                        if (rect.width > 10 && rect.height > 10) {
-                            let roi = mat.roi(rect);
-                            let text = recognizeText(roi);
-                            if (text) {
-                                texts.push(text);
-                            }
-                            roi.delete();
+                        const rect = window.cv.boundingRect(contours.get(i));
+                        if (rect.width > 10 && rect.height > 10 && rect.width < mat.cols * 0.9) {
+                            possibleTextRegions.push({
+                                x: rect.x,
+                                y: rect.y,
+                                width: rect.width,
+                                height: rect.height
+                            });
                         }
                     }
+                    console.log(`Identified ${possibleTextRegions.length} possible text regions`);
                     
+                    mat.delete();
+                    gray.delete();
+                    edges.delete();
                     contours.delete();
                     hierarchy.delete();
-                    mat.delete();
                     
+                    console.log('Image processing completed successfully');
                     resolve({
-                        artists: texts,
-                        fullText: texts.join('\n')
+                        artists: possibleTextRegions.map((_, index) => `Possible Artist ${index + 1}`),
+                        fullText: `Found ${possibleTextRegions.length} possible text regions`
                     });
                 } catch (error) {
+                    console.error('Error during image processing:', error);
                     reject(new Error(`Error processing image: ${error.message}`));
                 }
             };
-            img.onerror = () => reject(new Error('Failed to load image'));
+            img.onerror = () => {
+                console.error('Failed to load image');
+                reject(new Error('Failed to load image'));
+            };
             img.src = URL.createObjectURL(file);
         });
     }, [openCVLoaded]);
 
-    const recognizeText = (mat) => {
-        // This is a placeholder. In a real implementation, you'd use a more sophisticated
-        // text recognition method here, possibly using a pre-trained LSTM model.
-        return "Placeholder Artist";
-    };
-
     const submitPhoto = useCallback(async (file) => {
         console.log('submitPhoto called with file:', file.name);
         if (!openCVLoaded) {
+            console.log('OpenCV.js is not loaded yet');
             setNotification({ 
                 show: true, 
                 message: 'OpenCV.js is not loaded yet. Please wait a moment and try again.', 
@@ -155,6 +167,7 @@ export default function Home() {
         setLinksFetched(false);
 
         try {
+            console.log('Starting image processing');
             const result = await processImage(file);
             console.log('Image processing result:', result);
             
@@ -256,6 +269,7 @@ export default function Home() {
                             reset={resetLineup}
                             artistLinks={artistLinks}
                             fetchArtistLinks={fetchArtistLinks}
+                            isProcessing={loading}
                         />
                     ) : (
                         <div className={styles.viewContainer}>

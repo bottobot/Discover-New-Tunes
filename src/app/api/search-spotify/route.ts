@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { spotifyClient } from '@/utils/spotifyClient';
 import { isExactMatch } from '@/utils/artistMatching';
+import logger from '@/utils/logger';
 
 // Route segment config
 export const runtime = 'nodejs';
@@ -42,11 +43,25 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Error searching Spotify:', error);
+    logger.error('Error searching Spotify:', { 
+      error: error instanceof Error ? error.message : String(error),
+      artist
+    });
+
+    // Check for credential errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('credentials')) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Spotify service unavailable',
+        details: 'Configuration error. Please contact support.'
+      }, { status: 503 });
+    }
+
     return NextResponse.json({ 
       success: false,
       error: 'Error searching Spotify',
-      details: error instanceof Error ? error.message : String(error)
+      details: errorMessage
     }, { status: 500 });
   }
 }

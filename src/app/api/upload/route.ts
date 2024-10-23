@@ -39,11 +39,25 @@ export async function POST(request: NextRequest) {
       logger.error('Error processing image:', { 
         error: error instanceof Error ? error.message : String(error)
       });
+
+      // Check for credential errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('credentials')) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'OCR service unavailable',
+            details: 'Configuration error. Please contact support.'
+          },
+          { status: 503 }
+        );
+      }
+
       return NextResponse.json(
         { 
           success: false,
           error: 'Failed to process image',
-          details: error instanceof Error ? error.message : String(error)
+          details: errorMessage
         },
         { status: 500 }
       );

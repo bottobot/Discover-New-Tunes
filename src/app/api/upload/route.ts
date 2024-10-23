@@ -30,11 +30,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Convert file to buffer directly
+    // Convert file to buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Pass buffer directly to OCR function
+    // Pass buffer to OCR function
     const text = await performOCR(buffer)
     const lines = text.split('\n')
     const potentialArtists = lines.filter(line => line.trim().length > 0)

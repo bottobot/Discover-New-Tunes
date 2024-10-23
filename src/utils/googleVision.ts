@@ -1,4 +1,5 @@
 import { ImageAnnotatorClient } from '@google-cloud/vision';
+import { readFile } from 'fs/promises';
 
 let client: ImageAnnotatorClient | null = null;
 
@@ -28,11 +29,14 @@ async function validateImage(buffer: Buffer): Promise<void> {
   }
 }
 
-export async function performOCR(buffer: Buffer): Promise<string> {
+export async function performOCR(input: string | Buffer): Promise<string> {
   try {
     // Initialize client if not already initialized
     const visionClient = initializeClient();
 
+    // Convert input to buffer if it's a file path
+    const buffer = typeof input === 'string' ? await readFile(input) : input;
+    
     // Validate image before processing
     await validateImage(buffer);
     

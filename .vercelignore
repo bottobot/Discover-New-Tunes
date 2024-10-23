@@ -1,0 +1,30 @@
+# Tests
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__/**
+jest.config.js
+jest.setup.js
+
+# Development configs
+.eslintrc*
+.prettierrc*
+tsconfig.test.json
+
+# Source maps
+**/*.js.map
+**/*.css.map
+
+# Development files
+README.md
+*.log
+.git*
+.env*
+.editorconfig
+
+# Cache and temp files
+.next/cache
+node_modules
+coverage
+.vercel

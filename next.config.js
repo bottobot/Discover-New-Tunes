@@ -6,6 +6,14 @@ const nextConfig = {
     // External packages that shouldn't be bundled
     config.externals = [...config.externals, '@google-cloud/vision'];
 
+    // Exclude test files from production build
+    if (!dev) {
+      config.module.rules.push({
+        test: /\.(test|spec)\.(js|jsx|ts|tsx)$/,
+        loader: 'ignore-loader'
+      });
+    }
+
     // Production optimizations
     if (!dev && !isServer) {
       // Enable tree shaking

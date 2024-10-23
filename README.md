@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Discover New Tunes
 
-## Getting Started
+A web application that helps you discover new music by extracting artist names from festival lineup images and finding their music on streaming platforms.
 
-First, run the development server:
+## Environment Variables
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+The following environment variables must be set in your Vercel project settings:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Google Vision API
+The Google Vision credentials are partially configured in vercel.json, but you need to add the private key:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Go to your Vercel project settings
+2. Navigate to the Environment Variables section
+3. Add a new environment variable:
+   - Name: `GOOGLE_VISION_PRIVATE_KEY`
+   - Value: (Copy the entire private key from the service account JSON, including the "-----BEGIN PRIVATE KEY-----" and "-----END PRIVATE KEY-----" lines)
+   - Scope: Production, Preview, Development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Spotify API
+- `SPOTIFY_CLIENT_ID`: Client ID from Spotify Developer Dashboard
+- `SPOTIFY_CLIENT_SECRET`: Client Secret from Spotify Developer Dashboard
 
-## Learn More
+## Development
 
-To learn more about Next.js, take a look at the following resources:
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Create a `.env` file with the required environment variables
+4. Run the development server: `npm run dev`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push your changes to GitHub
+2. Connect your repository to Vercel
+3. Configure the private key in your Vercel project settings
+4. Deploy!
 
-## Deploy on Vercel
+## Important Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- The private key should be added through Vercel's environment variables interface, not directly in vercel.json
+- Make sure to replace any `\n` characters in the private key with actual newlines when adding it to Vercel
+- The private key should never be committed to the repository

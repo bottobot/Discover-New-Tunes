@@ -40,5 +40,10 @@
         }
       ]
     }
-  ]
+  ],
+  "env": {
+    "GOOGLE_VISION_PROJECT_ID": "inductive-choir-439205-p6",
+    "GOOGLE_VISION_CLIENT_EMAIL": "discovertunes@inductive-choir-439205-p6.iam.gserviceaccount.com",
+    "GOOGLE_VISION_PRIVATE_KEY": "@google-vision-private-key"
+  }
 }

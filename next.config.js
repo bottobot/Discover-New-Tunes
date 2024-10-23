@@ -48,19 +48,6 @@ const nextConfig = {
           }
         },
       };
-
-      // Minimize CSS
-      config.module.rules.push({
-        test: /\.css$/,
-        use: [
-          {
-            loader: 'css-loader',
-            options: {
-              minimize: true,
-            },
-          },
-        ],
-      });
     }
 
     return config;

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import styles from './Lineup.module.css';
 
 export interface LineupProps {
@@ -23,27 +23,18 @@ const Lineup: React.FC<LineupProps> = ({
   deleteArtistValue,
   reset,
   artistLinks,
-  fetchArtistLinks,
   isProcessing
 }) => {
-  useEffect(() => {
-    if (artists.length > 0 && Object.keys(artistLinks).length === 0) {
-      fetchArtistLinks(artists);
-    }
-  }, [artists, artistLinks, fetchArtistLinks]);
-
   return (
     <div className={styles.lineup}>
       <h2>{eventInfo.eventName} Lineup</h2>
       <p>{eventInfo.eventDate} - {eventInfo.eventLocation}</p>
-      {isProcessing ? (
-        <p>Processing artist links...</p>
-      ) : (
-        <ul className={styles.artistList}>
-          {artists.map((artist, index) => (
-            <li key={index} className={styles.artistItem}>
-              <span className={styles.artistName}>{artist}</span>
-              {artistLinks[artist]?.spotifyUrl && (
+      <ul className={styles.artistList}>
+        {artists.map((artist, index) => (
+          <li key={index} className={styles.artistItem}>
+            <span className={styles.artistName}>{artist}</span>
+            {artistLinks[artist] ? (
+              artistLinks[artist].spotifyUrl ? (
                 <a
                   href={artistLinks[artist].spotifyUrl}
                   target="_blank"
@@ -52,16 +43,23 @@ const Lineup: React.FC<LineupProps> = ({
                 >
                   Spotify
                 </a>
-              )}
-              <button
-                onClick={() => deleteArtistValue(artist)}
-                className={styles.deleteButton}
-              >
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
+              ) : (
+                <span className={styles.noLinkFound}>No Spotify link found</span>
+              )
+            ) : (
+              <span className={styles.loading}>Loading...</span>
+            )}
+            <button
+              onClick={() => deleteArtistValue(artist)}
+              className={styles.deleteButton}
+            >
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
+      {isProcessing && (
+        <p className={styles.processingMessage}>Still processing some artist links...</p>
       )}
       <button onClick={reset} className={styles.resetButton}>Reset</button>
     </div>

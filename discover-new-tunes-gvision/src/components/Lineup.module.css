@@ -77,3 +77,20 @@
 .resetButton:hover {
   background-color: #45a049;
 }
+
+.loading {
+  font-style: italic;
+  color: #888;
+  margin-right: 10px;
+}
+
+.noLinkFound {
+  color: #888;
+  margin-right: 10px;
+}
+
+.processingMessage {
+  font-style: italic;
+  color: #888;
+  margin-top: 20px;
+}

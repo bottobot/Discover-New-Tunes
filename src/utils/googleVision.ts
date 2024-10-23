@@ -3,6 +3,20 @@ import logger from './logger';
 
 let client: ImageAnnotatorClient | null = null;
 
+function formatPrivateKey(key: string): string {
+  // If the key doesn't start with the header, assume it needs to be formatted
+  if (!key.includes('-----BEGIN PRIVATE KEY-----')) {
+    // Replace literal \n with newlines
+    key = key.replace(/\\n/g, '\n');
+    
+    // If still no header, add the full format
+    if (!key.includes('-----BEGIN PRIVATE KEY-----')) {
+      key = `-----BEGIN PRIVATE KEY-----\n${key}\n-----END PRIVATE KEY-----\n`;
+    }
+  }
+  return key;
+}
+
 function initializeClient(): ImageAnnotatorClient {
   if (client) return client;
 
@@ -10,15 +24,28 @@ function initializeClient(): ImageAnnotatorClient {
     throw new Error('Missing required Google Vision credentials in environment variables');
   }
 
-  client = new ImageAnnotatorClient({
-    projectId: process.env.GOOGLE_VISION_PROJECT_ID,
-    credentials: {
-      private_key: process.env.GOOGLE_VISION_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      client_email: process.env.GOOGLE_VISION_CLIENT_EMAIL
-    }
-  });
-  
-  return client;
+  try {
+    const privateKey = formatPrivateKey(process.env.GOOGLE_VISION_PRIVATE_KEY);
+    
+    client = new ImageAnnotatorClient({
+      projectId: process.env.GOOGLE_VISION_PROJECT_ID,
+      credentials: {
+        private_key: privateKey,
+        client_email: process.env.GOOGLE_VISION_CLIENT_EMAIL
+      }
+    });
+    
+    logger.info('Google Vision client initialized successfully');
+    return client;
+  } catch (error) {
+    logger.error('Failed to initialize Google Vision client:', {
+      error: error instanceof Error ? error.message : String(error),
+      clientEmail: process.env.GOOGLE_VISION_CLIENT_EMAIL,
+      projectId: process.env.GOOGLE_VISION_PROJECT_ID,
+      hasPrivateKey: !!process.env.GOOGLE_VISION_PRIVATE_KEY
+    });
+    throw new Error('Failed to initialize Google Vision client. Check your credentials.');
+  }
 }
 
 const maxFileSize = 20 * 1024 * 1024; // 20MB

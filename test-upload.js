@@ -32,7 +32,7 @@ async function testImageUpload() {
     logger.info('Starting image upload test');
     logger.info(`Using image: ${imagePath}`);
 
-    const response = await axios.post('http://localhost:3000/api/upload', formData, {
+    const response = await axios.post('http://localhost:3001/api/upload', formData, {
       headers: {
         ...formData.getHeaders(),
         'Content-Type': 'multipart/form-data',

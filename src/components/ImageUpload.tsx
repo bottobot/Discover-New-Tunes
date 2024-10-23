@@ -61,6 +61,59 @@ const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
     }
   }, [preview])
 
+  const handleError = useCallback((error: unknown, file: File) => {
+    const errorData: ErrorData = {
+      timestamp: new Date().toISOString(),
+      errorType: 'Upload Error',
+      errorMessage: 'Error processing image',
+      request: {
+        url: '/api/upload',
+        method: 'POST',
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      }
+    }
+    
+    if (axios.isAxiosError(error)) {
+      errorData.errorType = 'API Error'
+      errorData.errorMessage = error.response?.data?.error || error.message
+      if (error.response?.data?.details?.includes('Missing required Google Vision credentials')) {
+        errorData.errorType = 'Configuration Error'
+        errorData.errorMessage = 'Server configuration error. Please contact support.'
+      }
+      errorData.response = {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      }
+      errorData.stack = error.stack
+    } else if (error instanceof Error) {
+      if (error.message.includes('Missing required Google Vision credentials')) {
+        errorData.errorType = 'Configuration Error'
+        errorData.errorMessage = 'Server configuration error. Please contact support.'
+      } else {
+        errorData.errorMessage = error.message
+      }
+      errorData.stack = error.stack
+    }
+
+    // Store error in localStorage before navigation
+    const errorString = JSON.stringify(errorData)
+    localStorage.setItem('lastError', errorString)
+    
+    // Use both methods for maximum compatibility
+    const errorUrl = `/error-details?error=${encodeURIComponent(errorString)}`
+    console.log('Redirecting to:', errorUrl)
+    
+    try {
+      router.push(errorUrl)
+    } catch (e) {
+      console.log('Router push failed, using window.location')
+      window.location.href = errorUrl
+    }
+  }, [router])
+
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!file) return
@@ -82,39 +135,11 @@ const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
         throw new Error(response.data.error || 'OCR failed')
       }
     } catch (error) {
-      const errorData: ErrorData = {
-        timestamp: new Date().toISOString(),
-        errorType: 'Upload Error',
-        errorMessage: 'Error processing image',
-        request: {
-          url: '/api/upload',
-          method: 'POST',
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type
-        }
-      }
-      
-      if (axios.isAxiosError(error)) {
-        errorData.errorType = 'API Error'
-        errorData.errorMessage = error.response?.data?.error || error.message
-        errorData.response = {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data
-        }
-        errorData.stack = error.stack
-      } else if (error instanceof Error) {
-        errorData.errorMessage = error.message
-        errorData.stack = error.stack
-      }
-
-      // Redirect to error page with error details
-      router.push(`/error-details?error=${encodeURIComponent(JSON.stringify(errorData))}`)
+      handleError(error, file)
     } finally {
       setLoading(false)
     }
-  }, [file, onOCRComplete, router])
+  }, [file, onOCRComplete, handleError])
 
   return (
     <div className="w-full max-w-md">

@@ -14,11 +14,14 @@ export default function ErrorDetails() {
 
   React.useEffect(() => {
     try {
+      // Get error from URL or localStorage
       const params = new URLSearchParams(window.location.search)
-      const rawError = params.get('error')
+      const rawError = params.get('error') || localStorage.getItem('lastError')
       if (rawError) {
         const parsedError = JSON.parse(decodeURIComponent(rawError))
         setErrorData(parsedError)
+        // Store in localStorage as backup
+        localStorage.setItem('lastError', rawError)
       }
     } catch (error) {
       setErrorData({

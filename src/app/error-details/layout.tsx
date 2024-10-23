@@ -1,20 +1,17 @@
-import type { Metadata } from 'next'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Error Details - Discover New Tunes',
-  description: 'Detailed error information for debugging',
-}
+import React from 'react';
 
 export default function ErrorDetailsLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="container mx-auto px-4">
         {children}
       </div>
     </div>
-  )
+  );
 }

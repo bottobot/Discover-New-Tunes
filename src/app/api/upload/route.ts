@@ -4,11 +4,9 @@ import { join } from 'path'
 import { performOCR } from '@/utils/googleVision'
 import logger from '@/utils/logger'
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
+// New route segment config format
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,6 +47,12 @@ export async function POST(req: NextRequest) {
         success: true, 
         text,
         artists: potentialArtists
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
       })
     } finally {
       // Delete the temporary file
@@ -64,14 +68,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Add OPTIONS handler for CORS
 export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Origin': '*',
-    },
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
   })
 }

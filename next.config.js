@@ -6,12 +6,13 @@ const nextConfig = {
     config.externals = [...config.externals, '@google-cloud/vision'];
     return config;
   },
-  // Add optimizations for static files
+  // Vercel deployment optimizations
+  output: 'standalone',
   optimizeFonts: true,
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
-  // Add security headers
+  // Security and performance headers
   async headers() {
     return [
       {
@@ -35,7 +36,7 @@ const nextConfig = {
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin'
+            value: 'strict-origin-when-cross-origin'
           },
           {
             key: 'Permissions-Policy',
@@ -70,6 +71,32 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Credentials',
             value: 'true'
+          }
+        ]
+      },
+      {
+        source: '/_next/static/media/:path*.woff2',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          },
+          {
+            key: 'Content-Type',
+            value: 'font/woff2'
+          }
+        ]
+      },
+      {
+        source: '/_next/static/media/:path*.woff',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          },
+          {
+            key: 'Content-Type',
+            value: 'font/woff'
           }
         ]
       }

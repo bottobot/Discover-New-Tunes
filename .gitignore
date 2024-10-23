@@ -1,40 +1,47 @@
-# Dependencies
+# dependencies
 /node_modules
 /.pnp
 .pnp.js
 
-# Testing
+# testing
 /coverage
 
-# Next.js
+# next.js
 /.next/
 /out/
+.next
 
-# Production
+# production
 /build
 
-# Misc
+# misc
 .DS_Store
 *.pem
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Local env files
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Vercel
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+
+# vercel
 .vercel
 
-# Google Cloud
-google-cloud-key.json
-inductive-choir-439205-p6-c66d07c3bd77.json
+# typescript
+*.tsbuildinfo
+next-env.d.ts
 
-# Log files
+# IDE
+.idea
+.vscode
+
+# Temporary files
+/tmp
 *.log

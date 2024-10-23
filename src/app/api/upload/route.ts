@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, unlink, mkdir } from 'fs/promises'
-import { join } from 'path'
 import { performOCR } from '@/utils/googleVision'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-async function createTempDir() {
-  const tmpDir = join(process.cwd(), 'tmp')
-  await mkdir(tmpDir, { recursive: true })
-  return tmpDir
-}
-
 export async function POST(req: NextRequest) {
-  let tempPath: string | null = null
-
   try {
     const formData = await req.formData()
     const file = formData.get('image') as File | null
@@ -40,13 +30,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const tmpDir = await createTempDir()
+    // Convert file to buffer directly
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    tempPath = join(tmpDir, `${Date.now()}-${file.name}`)
-    await writeFile(tempPath, buffer)
 
-    const text = await performOCR(tempPath)
+    // Pass buffer directly to OCR function
+    const text = await performOCR(buffer)
     const lines = text.split('\n')
     const potentialArtists = lines.filter(line => line.trim().length > 0)
 
@@ -71,8 +60,7 @@ export async function POST(req: NextRequest) {
       details: {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        code: error instanceof Error ? error.name : 'UNKNOWN_ERROR',
-        path: tempPath || undefined
+        code: error instanceof Error ? error.name : 'UNKNOWN_ERROR'
       }
     }
 
@@ -87,14 +75,6 @@ export async function POST(req: NextRequest) {
         }
       }
     )
-  } finally {
-    if (tempPath) {
-      try {
-        await unlink(tempPath)
-      } catch (error) {
-        // Silently handle cleanup errors
-      }
-    }
   }
 }
 

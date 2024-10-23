@@ -1,6 +1,4 @@
 import { ImageAnnotatorClient } from '@google-cloud/vision';
-import fs from 'fs/promises';
-import path from 'path';
 
 let client: ImageAnnotatorClient | null = null;
 
@@ -22,38 +20,24 @@ function initializeClient(): ImageAnnotatorClient {
   return client;
 }
 
-const supportedFormats = ['.png', '.jpg', '.jpeg', '.webp'];
 const maxFileSize = 20 * 1024 * 1024; // 20MB
 
-async function validateImage(imagePath: string): Promise<void> {
-  // Check if file exists
-  const stats = await fs.stat(imagePath);
-  
-  // Check file size
-  if (stats.size > maxFileSize) {
-    throw new Error(`File size (${stats.size} bytes) exceeds maximum allowed size (${maxFileSize} bytes)`);
-  }
-  
-  // Check file format
-  const fileExtension = path.extname(imagePath).toLowerCase();
-  if (!supportedFormats.includes(fileExtension)) {
-    throw new Error(`Unsupported file format: ${fileExtension}. Supported formats are: ${supportedFormats.join(', ')}`);
+async function validateImage(buffer: Buffer): Promise<void> {
+  if (buffer.length > maxFileSize) {
+    throw new Error(`File size (${buffer.length} bytes) exceeds maximum allowed size (${maxFileSize} bytes)`);
   }
 }
 
-export async function performOCR(imagePath: string): Promise<string> {
+export async function performOCR(buffer: Buffer): Promise<string> {
   try {
     // Initialize client if not already initialized
     const visionClient = initializeClient();
 
     // Validate image before processing
-    await validateImage(imagePath);
+    await validateImage(buffer);
     
-    // Read the file content
-    const imageContent = await fs.readFile(imagePath);
-    
-    // Perform OCR using image content
-    const [result] = await visionClient.textDetection(imageContent);
+    // Perform OCR using image buffer
+    const [result] = await visionClient.textDetection(buffer);
     const detections = result.textAnnotations;
     
     if (!detections || detections.length === 0) {

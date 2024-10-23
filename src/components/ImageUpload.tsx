@@ -1,0 +1,79 @@
+import React, { useState } from 'react'
+import axios from 'axios'
+
+interface ImageUploadProps {
+  onOCRComplete: (text: string) => void
+}
+
+const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0])
+      setPreview(URL.createObjectURL(e.target.files[0]))
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!file) return
+
+    setLoading(true)
+    const formData = new FormData()
+    formData.append('image', file)
+
+    try {
+      const response = await axios.post('/api/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      if (response.data.success && response.data.text) {
+        onOCRComplete(response.data.text)
+      } else {
+        throw new Error('OCR failed')
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Error processing image. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="w-full max-w-md">
+      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="image">
+            Upload Lineup Image
+          </label>
+          <input
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            id="image"
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+        </div>
+        {preview && (
+          <div className="mb-4">
+            <img src={preview} alt="Preview" className="max-w-full h-auto" />
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="submit"
+            disabled={!file || loading}
+          >
+            {loading ? 'Processing...' : 'Upload'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+export default ImageUpload

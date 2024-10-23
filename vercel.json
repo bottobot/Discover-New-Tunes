@@ -13,7 +13,9 @@
     }
   ],
   "env": {
-    "GOOGLE_APPLICATION_CREDENTIALS": "@google-application-credentials",
+    "GOOGLE_VISION_CLIENT_EMAIL": "@google-vision-client-email",
+    "GOOGLE_VISION_PRIVATE_KEY": "@google-vision-private-key",
+    "GOOGLE_VISION_PROJECT_ID": "@google-vision-project-id",
     "SPOTIFY_CLIENT_ID": "@spotify-client-id",
     "SPOTIFY_CLIENT_SECRET": "@spotify-client-secret"
   }

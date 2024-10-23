@@ -34,6 +34,7 @@ yarn-error.log*
 
 # Google Cloud
 google-cloud-key.json
+inductive-choir-439205-p6-c66d07c3bd77.json
 
 # Log files
 *.log

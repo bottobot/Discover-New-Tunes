@@ -1,30 +1,18 @@
-import { performOCR, path, logger } from './test-utils';
+import { performOCR } from './src/utils/googleVision';
+import path from 'path';
+import logger from './src/utils/logger';
 
 async function testInvalidFile() {
   const imagePath = path.join(process.cwd(), 'nonexistent.webp');
   
   try {
-    logger.info('Starting OCR test with invalid file:', {
-      imagePath,
-      timestamp: new Date().toISOString()
-    });
-
-    const text = await performOCR(imagePath);
-    
-    logger.info('OCR test completed:', {
-      success: true,
-      textLength: text.length,
-      text: text.substring(0, 200) + (text.length > 200 ? '...' : ''),
-      timestamp: new Date().toISOString()
-    });
+    await performOCR(imagePath);
   } catch (error) {
-    logger.error('OCR test failed as expected:', {
+    logger.error('Error processing invalid file:', { 
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString()
+      path: imagePath
     });
-    process.exit(0); // Exit successfully since we expect this error
   }
 }
 
-testInvalidFile();
+testInvalidFile().catch(console.error);

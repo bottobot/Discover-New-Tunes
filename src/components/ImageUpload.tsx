@@ -1,6 +1,7 @@
 import React, { useState, useCallback, memo } from 'react'
 import dynamic from 'next/dynamic'
 import axios from 'axios'
+import { useRouter } from 'next/navigation'
 
 // Dynamically import Image component
 const Image = dynamic(() => import('next/image'), {
@@ -22,18 +23,36 @@ interface ErrorResponse {
   };
 }
 
+interface ErrorData {
+  timestamp: string;
+  errorType: string;
+  errorMessage: string;
+  request: {
+    url: string;
+    method: string;
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+  };
+  response?: {
+    status?: number;
+    statusText?: string;
+    data?: any;
+  };
+  stack?: string;
+}
+
 const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
+  const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0]
       setFile(selectedFile)
       setPreview(URL.createObjectURL(selectedFile))
-      setError(null)
 
       // Clean up previous preview URL
       return () => {
@@ -47,7 +66,6 @@ const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
     if (!file) return
 
     setLoading(true)
-    setError(null)
     const formData = new FormData()
     formData.append('file', file)
 
@@ -55,8 +73,7 @@ const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
       const response = await axios.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-        },
-        validateStatus: (status) => status < 500
+        }
       })
 
       if (response.data.success && response.data.text) {
@@ -65,22 +82,39 @@ const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
         throw new Error(response.data.error || 'OCR failed')
       }
     } catch (error) {
-      let errorMessage = 'Error processing image. Please try again.'
+      const errorData: ErrorData = {
+        timestamp: new Date().toISOString(),
+        errorType: 'Upload Error',
+        errorMessage: 'Error processing image',
+        request: {
+          url: '/api/upload',
+          method: 'POST',
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type
+        }
+      }
       
       if (axios.isAxiosError(error)) {
-        if (error.response?.status === 500) {
-          const errorData = error.response.data as ErrorResponse
-          errorMessage = errorData.error || errorMessage
+        errorData.errorType = 'API Error'
+        errorData.errorMessage = error.response?.data?.error || error.message
+        errorData.response = {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
         }
+        errorData.stack = error.stack
       } else if (error instanceof Error) {
-        errorMessage = error.message
+        errorData.errorMessage = error.message
+        errorData.stack = error.stack
       }
 
-      setError(errorMessage)
+      // Redirect to error page with error details
+      router.push(`/error-details?error=${encodeURIComponent(JSON.stringify(errorData))}`)
     } finally {
       setLoading(false)
     }
-  }, [file, onOCRComplete])
+  }, [file, onOCRComplete, router])
 
   return (
     <div className="w-full max-w-md">
@@ -109,11 +143,6 @@ const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
               priority={false}
               loading="lazy"
             />
-          </div>
-        )}
-        {error && (
-          <div className="mb-4 text-red-500 text-sm">
-            {error}
           </div>
         )}
         <div className="flex items-center justify-between">

@@ -2,7 +2,7 @@ import React from 'react'
 import dynamic from 'next/dynamic'
 
 // Dynamically import components
-const ErrorSection = dynamic(() => import('./ErrorSection'), {
+const ErrorSection = dynamic(() => import('@/app/error-details/ErrorSection'), {
   loading: () => <div className="animate-pulse bg-gray-100 h-32 rounded-lg mb-4" />
 })
 

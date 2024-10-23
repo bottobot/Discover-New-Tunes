@@ -6,6 +6,17 @@ interface ImageUploadProps {
   onOCRComplete: (text: string) => void
 }
 
+interface ErrorResponse {
+  success: false;
+  error: string;
+  details?: {
+    message: string;
+    stack?: string;
+    code?: string;
+    path?: string;
+  };
+}
+
 const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -45,8 +56,42 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
         throw new Error(response.data.error || 'OCR failed')
       }
     } catch (error) {
-      console.error('Error uploading image:', error)
-      setError(error instanceof Error ? error.message : 'Error processing image. Please try again.')
+      let errorMessage = 'Error processing image. Please try again.'
+      
+      if (axios.isAxiosError(error)) {
+        console.error('Upload Error Details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            headers: error.config?.headers,
+          },
+          stack: error.stack
+        })
+
+        if (error.response?.status === 500 && error.response.data) {
+          const errorData = error.response.data as ErrorResponse
+          console.error('Server Error Details:', {
+            error: errorData.error,
+            details: errorData.details,
+          })
+          errorMessage = errorData.error || errorMessage
+        }
+      } else if (error instanceof Error) {
+        console.error('Non-Axios Error:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        })
+        errorMessage = error.message
+      } else {
+        console.error('Unknown Error:', error)
+      }
+
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -82,6 +127,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
         {error && (
           <div className="mb-4 text-red-500 text-sm">
             {error}
+            <p className="text-xs mt-1">Check browser console for detailed error information.</p>
           </div>
         )}
         <div className="flex items-center justify-between">

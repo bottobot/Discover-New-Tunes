@@ -21,7 +21,14 @@ export async function POST(req: NextRequest) {
 
     if (!file) {
       return NextResponse.json(
-        { success: false, error: 'No image file uploaded' },
+        { 
+          success: false, 
+          error: 'No image file uploaded',
+          details: {
+            message: 'Form data did not contain an image file',
+            code: 'MISSING_FILE'
+          }
+        },
         { 
           status: 400,
           headers: {
@@ -58,8 +65,19 @@ export async function POST(req: NextRequest) {
       }
     )
   } catch (error) {
+    const errorDetails = {
+      success: false,
+      error: 'Error processing image',
+      details: {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        code: error instanceof Error ? error.name : 'UNKNOWN_ERROR',
+        path: tempPath || undefined
+      }
+    }
+
     return NextResponse.json(
-      { success: false, error: 'Error processing image' },
+      errorDetails,
       { 
         status: 500,
         headers: {

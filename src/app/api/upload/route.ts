@@ -4,6 +4,12 @@ import { join } from 'path'
 import { performOCR } from '@/utils/googleVision'
 import logger from '@/utils/logger'
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
@@ -56,4 +62,16 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ success: false, error: 'Error processing image' }, { status: 500 })
   }
+}
+
+// Add OPTIONS handler for CORS
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Origin': '*',
+    },
+  })
 }

@@ -5,6 +5,14 @@
 
 # testing
 /coverage
+/test-*.ts
+/test-*.js
+test-*.ts
+test-*.js
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
 
 # next.js
 /.next/

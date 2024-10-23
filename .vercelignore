@@ -1,8 +1,12 @@
 # Tests
-**/*.test.ts
-**/*.test.tsx
-**/*.spec.ts
-**/*.spec.tsx
+/test-*.ts
+/test-*.js
+test-*.ts
+test-*.js
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
 **/__tests__/**
 jest.config.js
 jest.setup.js

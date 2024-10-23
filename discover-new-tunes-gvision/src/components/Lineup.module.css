@@ -1,0 +1,79 @@
+.lineup {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.lineup h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.lineup p {
+  margin-bottom: 20px;
+}
+
+.artistList {
+  list-style-type: none;
+  padding: 0;
+}
+
+.artistItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.artistName {
+  font-size: 18px;
+  flex-grow: 1;
+}
+
+.spotifyButton {
+  background-color: #1DB954;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+  margin-right: 10px;
+}
+
+.spotifyButton:hover {
+  background-color: #1ED760;
+}
+
+.deleteButton {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.deleteButton:hover {
+  background-color: #ff3333;
+}
+
+.resetButton {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.resetButton:hover {
+  background-color: #45a049;
+}

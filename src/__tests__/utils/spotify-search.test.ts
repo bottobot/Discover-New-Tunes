@@ -1,8 +1,9 @@
-import { normalizeArtistName, isExactMatch } from './src/utils/artistMatching';
+import { describe, it, expect } from '@jest/globals';
+import { normalizeArtistName, isExactMatch } from '@/utils/artistMatching';
 
 describe('Spotify Artist Name Matching', () => {
   describe('normalizeArtistName', () => {
-    test('should normalize artist names correctly', () => {
+    it('should normalize artist names correctly', () => {
       const testCases = [
         ['A$AP Rocky', 'asaprocky'],
         ['P!nk', 'pink'],
@@ -18,7 +19,7 @@ describe('Spotify Artist Name Matching', () => {
   });
 
   describe('isExactMatch', () => {
-    test('should match exact names', () => {
+    it('should match exact names', () => {
       const testCases = [
         ['A$AP Rocky', 'ASAP Rocky'],
         ['P!nk', 'Pink'],
@@ -31,7 +32,7 @@ describe('Spotify Artist Name Matching', () => {
       });
     });
 
-    test('should not match different names', () => {
+    it('should not match different names', () => {
       const testCases = [
         ['A$AP Rocky', 'ASAP Ferg'],
         ['P!nk', 'Pink Floyd'],

@@ -12,7 +12,8 @@
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept"
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true"
       },
       "continue": true
     },
@@ -33,34 +34,46 @@
       "continue": true
     },
     {
-      "src": "/_next/static/media/(.*)\\.woff2$",
+      "src": "/_next/static/media/.*\\.woff2$",
       "headers": {
         "cache-control": "public, max-age=31536000, immutable",
-        "content-type": "font/woff2"
+        "content-type": "font/woff2",
+        "Access-Control-Allow-Origin": "*"
       },
       "continue": true
     },
     {
-      "src": "/_next/static/media/(.*)\\.woff$",
+      "src": "/_next/static/media/.*\\.woff$",
       "headers": {
         "cache-control": "public, max-age=31536000, immutable",
-        "content-type": "font/woff"
+        "content-type": "font/woff",
+        "Access-Control-Allow-Origin": "*"
       },
       "continue": true
-    },
-    {
-      "src": "/_next/static/(.*)",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      },
-      "continue": true
-    },
-    {
-      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/"
+      "headers": {
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Access-Control-Allow-Credentials": "true"
+      },
+      "continue": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Set-Cookie",
+          "value": "__vercel_live_token=*; SameSite=None; Secure"
+        }
+      ]
     }
   ],
   "env": {

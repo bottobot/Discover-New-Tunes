@@ -10,11 +10,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
       setPreview(URL.createObjectURL(e.target.files[0]))
+      setError(null)
     }
   }
 
@@ -23,21 +25,28 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
     if (!file) return
 
     setLoading(true)
+    setError(null)
     const formData = new FormData()
     formData.append('image', file)
 
     try {
       const response = await axios.post('/api/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        validateStatus: (status) => {
+          return status < 500 // Resolve only if the status code is less than 500
+        }
       })
+
       if (response.data.success && response.data.text) {
         onOCRComplete(response.data.text)
       } else {
-        throw new Error('OCR failed')
+        throw new Error(response.data.error || 'OCR failed')
       }
     } catch (error) {
       console.error('Error uploading image:', error)
-      alert('Error processing image. Please try again.')
+      setError(error instanceof Error ? error.message : 'Error processing image. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -56,6 +65,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
             type="file"
             accept="image/*"
             onChange={handleFileChange}
+            disabled={loading}
           />
         </div>
         {preview && (
@@ -69,9 +79,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
             />
           </div>
         )}
+        {error && (
+          <div className="mb-4 text-red-500 text-sm">
+            {error}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
             type="submit"
             disabled={!file || loading}
           >

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import Image from 'next/image'
 
 interface ImageUploadProps {
   onOCRComplete: (text: string) => void
@@ -58,8 +59,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
           />
         </div>
         {preview && (
-          <div className="mb-4">
-            <img src={preview} alt="Preview" className="max-w-full h-auto" />
+          <div className="mb-4 relative w-full h-[300px]">
+            <Image 
+              src={preview}
+              alt="Preview"
+              fill
+              style={{ objectFit: 'contain' }}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
           </div>
         )}
         <div className="flex items-center justify-between">

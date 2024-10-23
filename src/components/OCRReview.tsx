@@ -145,7 +145,7 @@ const OCRReview: React.FC<OCRReviewProps> = ({ initialData, onConfirm }) => {
           Please review the list of names. If more than one artist is in a text box, just select their names and hit the plus button. It will automatically add a new text box and fill in the name. To delete a name, just select it by clicking or pressing it and hit the minus button. To delete a field and all the text, you do not need to select any of it, just hit the minus button.
         </p>
         <p>
-          After you've confirmed the artist names, hit the "Continue" button in order to upload the list and get all their links to their Spotify and Soundcloud pages in a tidy list for you!
+          After you&apos;ve confirmed the artist names, hit the "Continue" button in order to upload the list and get all their links to their Spotify and Soundcloud pages in a tidy list for you!
         </p>
       </div>
       <div className={styles.artistsList}>

@@ -3,15 +3,27 @@ import fs from 'fs/promises';
 import path from 'path';
 import logger from './logger';
 
-// Initialize client with credentials file
-const client: ImageAnnotatorClient = (() => {
+let client: ImageAnnotatorClient | null = null;
+
+// Initialize client with credentials from environment variables
+function initializeClient(): ImageAnnotatorClient {
+  if (client) return client;
+
   try {
-    const credentialsPath = path.join(process.cwd(), 'inductive-choir-439205-p6-c66d07c3bd77.json');
-    const instance = new ImageAnnotatorClient({
-      keyFilename: credentialsPath
+    if (!process.env.GOOGLE_VISION_CLIENT_EMAIL || !process.env.GOOGLE_VISION_PRIVATE_KEY) {
+      throw new Error('Missing required Google Vision credentials in environment variables');
+    }
+
+    client = new ImageAnnotatorClient({
+      projectId: process.env.GOOGLE_VISION_PROJECT_ID,
+      credentials: {
+        private_key: process.env.GOOGLE_VISION_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        client_email: process.env.GOOGLE_VISION_CLIENT_EMAIL
+      }
     });
+    
     logger.info('Google Vision client initialized successfully');
-    return instance;
+    return client;
   } catch (error) {
     logger.error('Failed to initialize Google Vision client:', {
       error: error instanceof Error ? error.message : String(error),
@@ -19,7 +31,7 @@ const client: ImageAnnotatorClient = (() => {
     });
     throw error;
   }
-})();
+}
 
 const supportedFormats = ['.png', '.jpg', '.jpeg', '.webp'];
 const maxFileSize = 20 * 1024 * 1024; // 20MB
@@ -57,6 +69,9 @@ export async function performOCR(imagePath: string): Promise<string> {
   const startTime = Date.now();
   
   try {
+    // Initialize client if not already initialized
+    const visionClient = initializeClient();
+
     logger.info('Starting OCR process:', { 
       imagePath,
       timestamp: new Date().toISOString()
@@ -69,7 +84,7 @@ export async function performOCR(imagePath: string): Promise<string> {
     const imageContent = await fs.readFile(imagePath);
     
     // Perform OCR using image content
-    const [result] = await client.textDetection(imageContent);
+    const [result] = await visionClient.textDetection(imageContent);
     const detections = result.textAnnotations;
     
     if (!detections || detections.length === 0) {

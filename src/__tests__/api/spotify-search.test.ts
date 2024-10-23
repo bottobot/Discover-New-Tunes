@@ -1,8 +1,8 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
-import { normalizeArtistName, isExactMatch } from '@/utils/artistMatching';
 import { GET } from '@/app/api/search-spotify/route';
 import { spotifyClient } from '@/utils/spotifyClient';
+import { normalizeArtistName, isExactMatch } from '@/utils/artistMatching';
 
 // Mock the spotifyClient methods
 const mockGetAccessToken = jest.spyOn(spotifyClient, 'getAccessToken');

@@ -1,4 +1,5 @@
 import { ImageAnnotatorClient } from '@google-cloud/vision';
+import fs from 'fs/promises';
 
 let client: ImageAnnotatorClient | null = null;
 
@@ -21,10 +22,25 @@ function initializeClient(): ImageAnnotatorClient {
 }
 
 const maxFileSize = 20 * 1024 * 1024; // 20MB
+const validImageSignatures = [
+  [0xFF, 0xD8], // JPEG
+  [0x89, 0x50], // PNG
+  [0x47, 0x49], // GIF
+  [0x52, 0x49], // WEBP
+];
 
 async function validateImage(buffer: Buffer): Promise<void> {
   if (buffer.length > maxFileSize) {
     throw new Error(`File size (${buffer.length} bytes) exceeds maximum allowed size (${maxFileSize} bytes)`);
+  }
+
+  // Check for valid image signatures
+  const isValidImage = validImageSignatures.some(signature => 
+    signature.every((byte, index) => buffer[index] === byte)
+  );
+
+  if (!isValidImage) {
+    throw new Error('Invalid image format');
   }
 }
 
@@ -34,7 +50,9 @@ export async function performOCR(input: string | Buffer): Promise<string> {
     const visionClient = initializeClient();
 
     // Convert input to buffer if it's a file path
-    const buffer = typeof input === 'string' ? Buffer.from(input) : input;
+    const buffer = typeof input === 'string' 
+      ? await fs.readFile(input)
+      : input;
     
     // Validate image before processing
     await validateImage(buffer);

@@ -1,49 +1,51 @@
 import React from 'react'
+import dynamic from 'next/dynamic'
 
-function ErrorSection({ title, data }: { title: string; data: any }) {
-  if (!data || Object.keys(data).length === 0) return null;
-
-  return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="bg-gray-100 px-4 py-2 font-semibold text-gray-700">
-        {title}
-      </div>
-      <div className="p-4">
-        <pre className="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-4 rounded overflow-x-auto">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      </div>
-    </div>
-  );
-}
+// Dynamically import components
+const ErrorSection = dynamic(() => import('./ErrorSection'), {
+  loading: () => <div className="animate-pulse bg-gray-100 h-32 rounded-lg mb-4" />
+})
 
 export default function ErrorDetails() {
-  const [errorData, setErrorData] = React.useState<any>(null);
+  const [errorData, setErrorData] = React.useState<any>(null)
+  const [copied, setCopied] = React.useState(false)
 
   React.useEffect(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const rawError = params.get('error');
+      const params = new URLSearchParams(window.location.search)
+      const rawError = params.get('error')
       if (rawError) {
-        const parsedError = JSON.parse(decodeURIComponent(rawError));
-        setErrorData(parsedError);
+        const parsedError = JSON.parse(decodeURIComponent(rawError))
+        setErrorData(parsedError)
       }
     } catch (error) {
-      console.error('Error parsing error data:', error);
       setErrorData({
         errorType: 'Error Parsing Data',
         errorMessage: 'Failed to parse error details',
         originalError: error instanceof Error ? error.message : String(error)
-      });
+      })
     }
-  }, []);
+  }, [])
+
+  const handleCopy = React.useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(errorData, null, 2))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+    }
+  }, [errorData])
 
   if (!errorData) {
     return (
       <div className="p-8 bg-white rounded-lg shadow-lg">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Loading Error Details...</h1>
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-32 bg-gray-100 rounded"></div>
+        </div>
       </div>
-    );
+    )
   }
 
   const sections = [
@@ -71,7 +73,7 @@ export default function ErrorDetails() {
       title: 'Stack Trace',
       data: { stack: errorData.stack }
     }
-  ];
+  ].filter(section => section.data && Object.keys(section.data).length > 0)
 
   return (
     <div className="p-8 bg-white rounded-lg shadow-lg">
@@ -79,15 +81,12 @@ export default function ErrorDetails() {
         <h1 className="text-2xl font-bold text-gray-800">Error Details</h1>
         <div className="space-x-4">
           <button
-            onClick={() => {
-              const text = JSON.stringify(errorData, null, 2);
-              navigator.clipboard.writeText(text)
-                .then(() => alert('Error details copied to clipboard'))
-                .catch(() => alert('Failed to copy to clipboard'));
-            }}
-            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-colors"
+            onClick={handleCopy}
+            className={`${
+              copied ? 'bg-green-500' : 'bg-gray-500 hover:bg-gray-700'
+            } text-white font-bold py-2 px-4 rounded transition-colors`}
           >
-            Copy All
+            {copied ? 'Copied!' : 'Copy All'}
           </button>
           <button
             onClick={() => window.history.back()}
@@ -100,7 +99,7 @@ export default function ErrorDetails() {
 
       <div className="space-y-6">
         {sections.map((section, index) => (
-          <ErrorSection key={index} title={section.title} data={section.data} />
+          <ErrorSection key={index} {...section} />
         ))}
       </div>
     </div>

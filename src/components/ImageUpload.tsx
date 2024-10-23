@@ -1,7 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, memo } from 'react'
+import dynamic from 'next/dynamic'
 import axios from 'axios'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+
+// Dynamically import Image component
+const Image = dynamic(() => import('next/image'), {
+  loading: () => <div className="w-full h-[300px] bg-gray-100 animate-pulse" />
+})
 
 interface ImageUploadProps {
   onOCRComplete: (text: string) => void
@@ -18,48 +22,27 @@ interface ErrorResponse {
   };
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
-  const router = useRouter()
+const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
-      setPreview(URL.createObjectURL(e.target.files[0]))
+      const selectedFile = e.target.files[0]
+      setFile(selectedFile)
+      setPreview(URL.createObjectURL(selectedFile))
       setError(null)
+
+      // Clean up previous preview URL
+      return () => {
+        if (preview) URL.revokeObjectURL(preview)
+      }
     }
-  }
+  }, [preview])
 
-  const redirectToErrorPage = (errorDetails: any) => {
-    const errorData = {
-      timestamp: new Date().toISOString(),
-      errorType: errorDetails.constructor.name,
-      errorMessage: errorDetails.message,
-      response: {
-        status: errorDetails.response?.status,
-        statusText: errorDetails.response?.statusText,
-        data: errorDetails.response?.data,
-        headers: errorDetails.response?.headers,
-      },
-      request: {
-        url: errorDetails.config?.url,
-        method: errorDetails.config?.method,
-        headers: errorDetails.config?.headers,
-      },
-      stack: errorDetails.stack,
-    }
-
-    const queryParams = new URLSearchParams({
-      error: encodeURIComponent(JSON.stringify(errorData))
-    }).toString()
-
-    router.push(`/error-details?${queryParams}`)
-  }
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!file) return
 
@@ -73,9 +56,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        validateStatus: (status) => {
-          return status < 500 // Resolve only if the status code is less than 500
-        }
+        validateStatus: (status) => status < 500
       })
 
       if (response.data.success && response.data.text) {
@@ -88,10 +69,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
       
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 500) {
-          redirectToErrorPage(error)
-          return
+          const errorData = error.response.data as ErrorResponse
+          errorMessage = errorData.error || errorMessage
         }
-        errorMessage = error.response?.data?.error || errorMessage
       } else if (error instanceof Error) {
         errorMessage = error.message
       }
@@ -100,7 +80,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [file, onOCRComplete])
 
   return (
     <div className="w-full max-w-md">
@@ -126,6 +106,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
               fill
               style={{ objectFit: 'contain' }}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              priority={false}
+              loading="lazy"
             />
           </div>
         )}
@@ -148,6 +130,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
       </form>
     </div>
   )
-}
+})
+
+ImageUpload.displayName = 'ImageUpload'
 
 export default ImageUpload

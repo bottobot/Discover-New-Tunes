@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { performOCR } from '@/utils/googleVision';
 import logger from '@/utils/logger';
 
+// Route segment config
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const data = await request.formData();
@@ -9,12 +13,15 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json(
-        { error: 'No file uploaded' },
+        { 
+          success: false,
+          error: 'No file uploaded' 
+        },
         { status: 400 }
       );
     }
 
-    // Get the file bytes directly
+    // Get the file bytes directly as a buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
@@ -23,13 +30,20 @@ export async function POST(request: NextRequest) {
       const text = await performOCR(buffer);
       logger.info('OCR completed successfully');
 
-      return NextResponse.json({ text });
+      return NextResponse.json({ 
+        success: true,
+        text 
+      });
     } catch (error) {
       logger.error('Error processing image:', { 
         error: error instanceof Error ? error.message : String(error)
       });
       return NextResponse.json(
-        { error: 'Failed to process image' },
+        { 
+          success: false,
+          error: 'Failed to process image',
+          details: error instanceof Error ? error.message : String(error)
+        },
         { status: 500 }
       );
     }
@@ -38,7 +52,11 @@ export async function POST(request: NextRequest) {
       error: error instanceof Error ? error.message : String(error)
     });
     return NextResponse.json(
-      { error: 'Failed to handle upload' },
+      { 
+        success: false,
+        error: 'Failed to handle upload',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

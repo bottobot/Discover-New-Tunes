@@ -30,6 +30,10 @@ const validImageSignatures = [
 ];
 
 async function validateImage(buffer: Buffer): Promise<void> {
+  if (!buffer || buffer.length === 0) {
+    throw new Error('Invalid image: empty buffer');
+  }
+
   if (buffer.length > maxFileSize) {
     throw new Error(`File size (${buffer.length} bytes) exceeds maximum allowed size (${maxFileSize} bytes)`);
   }

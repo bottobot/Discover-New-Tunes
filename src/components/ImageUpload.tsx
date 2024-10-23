@@ -49,7 +49,7 @@ const ImageUpload: React.FC<ImageUploadProps> = memo(({ onOCRComplete }) => {
     setLoading(true)
     setError(null)
     const formData = new FormData()
-    formData.append('image', file)
+    formData.append('file', file)
 
     try {
       const response = await axios.post('/api/upload', formData, {

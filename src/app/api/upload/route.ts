@@ -1,114 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, unlink, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { performOCR } from '@/utils/googleVision'
-import logger from '@/utils/logger'
+import { NextRequest, NextResponse } from 'next/server';
+import { performOCR } from '@/utils/googleVision';
+import logger from '@/utils/logger';
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
-
-async function createTempDir() {
-  const tmpDir = join(process.cwd(), 'tmp')
-  await mkdir(tmpDir, { recursive: true })
-  return tmpDir
-}
-
-export async function POST(req: NextRequest) {
-  let tempPath: string | null = null
-
+export async function POST(request: NextRequest) {
   try {
-    const formData = await req.formData()
-    const file = formData.get('image') as File | null
+    const data = await request.formData();
+    const file: File | null = data.get('file') as unknown as File;
 
     if (!file) {
-      logger.warn('No image file uploaded')
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'No image file uploaded',
-          details: {
-            message: 'Form data did not contain an image file',
-            code: 'MISSING_FILE'
-          }
-        },
-        { 
-          status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-          }
-        }
-      )
+        { error: 'No file uploaded' },
+        { status: 400 }
+      );
     }
 
-    logger.info('Processing file', { name: file.name, size: file.size, type: file.type })
+    // Get the file bytes directly
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-    const tmpDir = await createTempDir()
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    tempPath = join(tmpDir, `${Date.now()}-${file.name}`)
-    await writeFile(tempPath, buffer)
+    try {
+      // Process the image buffer directly
+      const text = await performOCR(buffer);
+      logger.info('OCR completed successfully');
 
-    const text = await performOCR(buffer)
-    const lines = text.split('\n')
-    const potentialArtists = lines.filter(line => line.trim().length > 0)
-
-    return NextResponse.json(
-      { 
-        success: true, 
-        text,
-        artists: potentialArtists
-      },
-      {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-        }
-      }
-    )
+      return NextResponse.json({ text });
+    } catch (error) {
+      logger.error('Error processing image:', { 
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return NextResponse.json(
+        { error: 'Failed to process image' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    logger.error('Error processing image', { 
-      error: error instanceof Error ? error.message : String(error), 
-      stack: error instanceof Error ? error.stack : undefined 
-    })
+    logger.error('Error handling upload:', { 
+      error: error instanceof Error ? error.message : String(error)
+    });
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Error processing image',
-        details: {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        }
-      },
-      { 
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-        }
-      }
-    )
-  } finally {
-    if (tempPath) {
-      try {
-        await unlink(tempPath)
-      } catch (error) {
-        logger.error('Error cleaning up temp file', { path: tempPath, error })
-      }
-    }
+      { error: 'Failed to handle upload' },
+      { status: 500 }
+    );
   }
-}
-
-export async function OPTIONS(req: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-    }
-  })
 }

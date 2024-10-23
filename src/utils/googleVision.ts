@@ -1,5 +1,5 @@
 import { ImageAnnotatorClient } from '@google-cloud/vision';
-import fs from 'fs/promises';
+import logger from './logger';
 
 let client: ImageAnnotatorClient | null = null;
 
@@ -44,15 +44,10 @@ async function validateImage(buffer: Buffer): Promise<void> {
   }
 }
 
-export async function performOCR(input: string | Buffer): Promise<string> {
+export async function performOCR(buffer: Buffer): Promise<string> {
   try {
     // Initialize client if not already initialized
     const visionClient = initializeClient();
-
-    // Convert input to buffer if it's a file path
-    const buffer = typeof input === 'string' 
-      ? await fs.readFile(input)
-      : input;
     
     // Validate image before processing
     await validateImage(buffer);
@@ -67,7 +62,9 @@ export async function performOCR(input: string | Buffer): Promise<string> {
 
     return detections[0].description || '';
   } catch (error) {
-    console.error('OCR Error:', error);
+    logger.error('OCR Error:', { 
+      error: error instanceof Error ? error.message : String(error)
+    });
     throw new Error(`Failed to perform OCR: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

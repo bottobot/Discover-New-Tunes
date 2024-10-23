@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import { spotifyClient } from '@/utils/spotifyClient';
 
-const CLIENT_ID = '3dd6c48419e64c338f5c5ceaef378e00';
-const CLIENT_SECRET = '74ec0eb574bb419a867d4c2f92f8e752';
+export function normalizeArtistName(name: string): string {
+  return name
+    .toLowerCase()
+    // Handle special cases first
+    .replace(/p!nk/i, 'pink')
+    // Then handle common substitutions
+    .replace(/\$/g, 's')
+    // Finally remove all remaining non-alphanumeric characters
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+}
 
-async function getAccessToken() {
-  const response = await axios.post('https://accounts.spotify.com/api/token', 
-    'grant_type=client_credentials',
-    {
-      headers: {
-        'Authorization': 'Basic ' + Buffer.from(CLIENT_ID + ':' + CLIENT_SECRET).toString('base64'),
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    }
-  );
-  return response.data.access_token;
+export function isExactMatch(searchedName: string, spotifyName: string): boolean {
+  const normalizedSearch = normalizeArtistName(searchedName);
+  const normalizedSpotify = normalizeArtistName(spotifyName);
+  return normalizedSearch === normalizedSpotify;
 }
 
 export async function GET(request: NextRequest) {
@@ -26,21 +28,32 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const accessToken = await getAccessToken();
-    const response = await axios.get(`https://api.spotify.com/v1/search?q=${encodeURIComponent(artist)}&type=artist&limit=1`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
+    const accessToken = await spotifyClient.getAccessToken();
+    const searchResult = await spotifyClient.searchArtist(artist, accessToken);
+    const exactMatch = searchResult.artists.items.find(a => isExactMatch(artist, a.name));
 
-    const artists = response.data.artists.items;
-    if (artists.length > 0) {
-      return NextResponse.json({ spotifyUrl: artists[0].external_urls.spotify });
+    if (exactMatch) {
+      return NextResponse.json({ 
+        spotifyUrl: exactMatch.external_urls.spotify,
+        exactMatch: true,
+        artistName: exactMatch.name
+      });
     } else {
-      return NextResponse.json({ spotifyUrl: null });
+      return NextResponse.json({ 
+        spotifyUrl: null,
+        exactMatch: false,
+        searchedName: artist,
+        possibleMatches: searchResult.artists.items.map(a => ({
+          name: a.name,
+          normalizedName: normalizeArtistName(a.name)
+        }))
+      });
     }
   } catch (error) {
     console.error('Error searching Spotify:', error);
-    return NextResponse.json({ error: 'Error searching Spotify' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Error searching Spotify',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }

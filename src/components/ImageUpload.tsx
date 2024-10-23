@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import axios from 'axios'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 interface ImageUploadProps {
   onOCRComplete: (text: string) => void
@@ -18,6 +19,7 @@ interface ErrorResponse {
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
+  const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -29,6 +31,32 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
       setPreview(URL.createObjectURL(e.target.files[0]))
       setError(null)
     }
+  }
+
+  const redirectToErrorPage = (errorDetails: any) => {
+    const errorData = {
+      timestamp: new Date().toISOString(),
+      errorType: errorDetails.constructor.name,
+      errorMessage: errorDetails.message,
+      response: {
+        status: errorDetails.response?.status,
+        statusText: errorDetails.response?.statusText,
+        data: errorDetails.response?.data,
+        headers: errorDetails.response?.headers,
+      },
+      request: {
+        url: errorDetails.config?.url,
+        method: errorDetails.config?.method,
+        headers: errorDetails.config?.headers,
+      },
+      stack: errorDetails.stack,
+    }
+
+    const queryParams = new URLSearchParams({
+      error: encodeURIComponent(JSON.stringify(errorData))
+    }).toString()
+
+    router.push(`/error-details?${queryParams}`)
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -59,36 +87,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
       let errorMessage = 'Error processing image. Please try again.'
       
       if (axios.isAxiosError(error)) {
-        console.error('Upload Error Details:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          headers: error.response?.headers,
-          config: {
-            url: error.config?.url,
-            method: error.config?.method,
-            headers: error.config?.headers,
-          },
-          stack: error.stack
-        })
-
-        if (error.response?.status === 500 && error.response.data) {
-          const errorData = error.response.data as ErrorResponse
-          console.error('Server Error Details:', {
-            error: errorData.error,
-            details: errorData.details,
-          })
-          errorMessage = errorData.error || errorMessage
+        if (error.response?.status === 500) {
+          redirectToErrorPage(error)
+          return
         }
+        errorMessage = error.response?.data?.error || errorMessage
       } else if (error instanceof Error) {
-        console.error('Non-Axios Error:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        })
         errorMessage = error.message
-      } else {
-        console.error('Unknown Error:', error)
       }
 
       setError(errorMessage)
@@ -127,7 +132,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onOCRComplete }) => {
         {error && (
           <div className="mb-4 text-red-500 text-sm">
             {error}
-            <p className="text-xs mt-1">Check browser console for detailed error information.</p>
           </div>
         )}
         <div className="flex items-center justify-between">

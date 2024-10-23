@@ -1,30 +1,23 @@
-import { performOCR, path, logger } from './test-utils';
+import { performOCR } from './src/utils/googleVision';
+import path from 'path';
+import logger from './src/utils/logger';
 
 async function testOCR() {
   const imagePath = path.join(process.cwd(), '2023-poster.webp');
   
   try {
-    logger.info('Starting OCR test:', {
-      imagePath,
-      timestamp: new Date().toISOString()
-    });
-
     const text = await performOCR(imagePath);
+    logger.info('OCR Result:', { text });
     
-    logger.info('OCR test completed:', {
-      success: true,
-      textLength: text.length,
-      text: text.substring(0, 200) + (text.length > 200 ? '...' : ''),
-      timestamp: new Date().toISOString()
-    });
+    // Split into lines and filter out empty ones
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
+    logger.info('Potential artists:', { lines });
   } catch (error) {
-    logger.error('OCR test failed:', {
+    logger.error('Error processing image:', { 
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString()
+      path: imagePath
     });
-    process.exit(1);
   }
 }
 
-testOCR();
+testOCR().catch(console.error);

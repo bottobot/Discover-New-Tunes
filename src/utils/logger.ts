@@ -1,27 +1,38 @@
-import winston from 'winston';
-import path from 'path';
+type LogLevel = 'info' | 'warn' | 'error';
 
-const logDir = path.join(process.cwd(), 'logs');
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.splat(),
-    winston.format.json()
-  ),
-  defaultMeta: { service: 'discover-new-tunes' },
-  transports: [
-    new winston.transports.File({ filename: path.join(logDir, 'error.log'), level: 'error' }),
-    new winston.transports.File({ filename: path.join(logDir, 'combined.log') }),
-  ],
-});
-
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple(),
-  }));
+interface LogMessage {
+  level: LogLevel;
+  message: string;
+  timestamp: string;
+  [key: string]: any;
 }
+
+function formatMessage(level: LogLevel, message: string, meta?: Record<string, any>): LogMessage {
+  return {
+    level,
+    message,
+    timestamp: new Date().toISOString(),
+    ...meta
+  };
+}
+
+const logger = {
+  info(message: string, meta?: Record<string, any>) {
+    const logMessage = formatMessage('info', message, meta);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(JSON.stringify(logMessage));
+    }
+  },
+
+  warn(message: string, meta?: Record<string, any>) {
+    const logMessage = formatMessage('warn', message, meta);
+    console.warn(JSON.stringify(logMessage));
+  },
+
+  error(message: string, meta?: Record<string, any>) {
+    const logMessage = formatMessage('error', message, meta);
+    console.error(JSON.stringify(logMessage));
+  }
+};
 
 export default logger;

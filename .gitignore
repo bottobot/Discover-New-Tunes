@@ -54,8 +54,23 @@ next-env.d.ts
 /tmp
 *.log
 
-# Credentials
+# Credentials and Security Files
 *.json
 !package.json
 !tsconfig.json
 !jest.config.js
+!tokenjsonplaceholder.json
+*.key
+*.pem
+*.p12
+*.pfx
+.env*
+!.env.example
+*credentials*
+*secret*
+*private*
+.secrets/
+auth.json
+config.json
+service-account*.json
+google-credentials*.json
